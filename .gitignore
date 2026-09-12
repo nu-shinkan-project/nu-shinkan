@@ -45,3 +45,6 @@ wrangler.deploy.jsonc
 
 # Nested Repo Ignore
 nu-shinkan.wiki/
+
+# Local workspace
+./discussion/
