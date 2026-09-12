@@ -47,4 +47,4 @@ wrangler.deploy.jsonc
 nu-shinkan.wiki/
 
 # Local workspace
-./discussion/
+.agents/handoff/
