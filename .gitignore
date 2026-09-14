@@ -43,8 +43,5 @@ yarn-error.log*
 wrangler.deploy.jsonc
 .env.deploy
 
-# Nested Repo Ignore
-docs/
-
 # Local workspace
 .agents/handoff/
