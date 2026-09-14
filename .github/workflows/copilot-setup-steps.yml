@@ -23,5 +23,5 @@ jobs:
       - name: Checkout wiki
         uses: actions/checkout@v7
         with:
-          repository: nu-shinkan-project/nu-shinkan.wiki
-          path: nu-shinkan.wiki
+          repository: nu-shinkan-project/docs
+          path: docs

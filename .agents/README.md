@@ -6,4 +6,4 @@
 その他の設計・規約などの参照方法は [リポジトリルートの AGENTS.md](../AGENTS.md) を参照してください。
 
 `.agents/handoff/` は Git 管理対象外の一時作業領域です。
-恒久的に参照する文書・知見は [文書運用規則](../nu-shinkan.wiki/policy/documentation.md) に依って管理してください。
+恒久的に参照する文書・知見は [文書運用規則](../docs/policy/documentation.md) に依って管理してください。

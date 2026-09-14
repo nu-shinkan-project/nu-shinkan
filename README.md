@@ -4,7 +4,7 @@
 
 ## ディレクトリ構成
 
-このリポジトリのディレクトリ構成に関する説明は，[ディレクトリ構成](nu-shinkan.wiki/design/repository-layout.md)を参照してください．
+このリポジトリのディレクトリ構成に関する説明は，[ディレクトリ構成](docs/design/repository-layout.md)を参照してください．
 
 ## 開発環境
 
@@ -22,13 +22,13 @@ CI/CDの設定により，開発者はpushによってデプロイをトリガ�
 
 ## 文書の参照
 
-[文書運用規則](nu-shinkan.wiki/policy/documentation.md)に従い、設計・規約・指示書などの
-グローバル文書は `nu-shinkan.wiki/`、ローカル文書は対象のディレクトリに配置します。
+[文書運用規則](docs/policy/documentation.md)に従い、設計・規約・指示書などの
+グローバル文書は `docs/`、ローカル文書は対象のディレクトリに配置します。
 Wiki は別の Git リポジトリです。未取得の場合はリポジトリルートで次を実行してください。
 
 ```sh
-git clone https://github.com/nu-shinkan-project/nu-shinkan.wiki.git nu-shinkan.wiki
+git clone https://github.com/nu-shinkan-project/docs.git docs
 ```
 
-文書の入口は [Wiki Home](nu-shinkan.wiki/Home.md)、エージェント向けの参照手順は
+文書の入口は [Wiki Home](docs/Home.md)、エージェント向けの参照手順は
 [AGENTS.md](AGENTS.md) にあります。Wiki の変更は Wiki 側で個別に差分確認・コミットします。

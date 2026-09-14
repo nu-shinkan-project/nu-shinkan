@@ -1,6 +1,6 @@
 # Connection graph
 
-[デプロイ設計](../../nu-shinkan.wiki/design/deploy-design.md#review-に共通の-connection-グラフ)の review 用対象選定を、独立した CLI として提供する。リポジトリルートで実行する。
+[デプロイ設計](../../docs/design/deploy-design.md#review-に共通の-connection-グラフ)の review 用対象選定を、独立した CLI として提供する。リポジトリルートで実行する。
 
 キャッシュ可能性を考慮し，エントリーポイントとして，`build.ts`と`select.ts`を提供している．
 

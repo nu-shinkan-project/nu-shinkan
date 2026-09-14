@@ -32,5 +32,5 @@ pnpm prepare
 # ---------------------------
 
 if [[ ! -d "$target_dir" ]]; then
-  git clone --depth 1 https://github.com/nu-shinkan-project/nu-shinkan.wiki.git
+  git clone --depth 1 https://github.com/nu-shinkan-project/docs.git
 fi

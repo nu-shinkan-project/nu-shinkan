@@ -8,4 +8,4 @@
 
 グラフはパッケージ名だけをノードとして保持し、pathやWorker名は持たない。計画側が選定された名前をworkspaceのパッケージ情報に対応づけ、Worker名を付与して最終的なtargetsを作る。
 
-workspace読み取りのテストでは、`ConnectionGraph.fromWorkspace(root)` に一時workspaceを渡す。検証対象の判断は[テスト方針](../../nu-shinkan.wiki/policy/testing-policy.md)に従い、CLIエントリーポイントは起動・importしない。
+workspace読み取りのテストでは、`ConnectionGraph.fromWorkspace(root)` に一時workspaceを渡す。検証対象の判断は[テスト方針](../../docs/policy/testing-policy.md)に従い、CLIエントリーポイントは起動・importしない。

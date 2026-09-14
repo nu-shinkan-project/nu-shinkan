@@ -31,4 +31,4 @@ pnpm --filter @repo/scripts exec vitest run
 pnpm --filter @repo/scripts exec tsc --noEmit
 ```
 
-テストは設定収集、connection graph などの内部ロジックを検証する。検証対象は[テスト方針](../nu-shinkan.wiki/policy/testing-policy.md)に従う。外部へのデプロイや通知は行わない。
+テストは設定収集、connection graph などの内部ロジックを検証する。検証対象は[テスト方針](../docs/policy/testing-policy.md)に従う。外部へのデプロイや通知は行わない。
