@@ -13,6 +13,10 @@
 git clone https://github.com/nu-shinkan-project/docs.git docs
 ```
 
+## 各種規則について
+
+文書運用規則，Git運用規則（ブランチ戦略など），レビュー規約などは，[docsリポジトリ](https://github.com/nu-shinkan-project/docs)の[`policy/`](https://github.com/nu-shinkan-project/docs/tree/main/policy)に保管されています．
+
 ## ディレクトリ構成
 
 リポジトリルートに存在する主なアイテムについて説明します．
@@ -25,16 +29,14 @@ git clone https://github.com/nu-shinkan-project/docs.git docs
   **開発者が主に触る場所です．**
   それぞれの詳細は`apps/*/README.md`を参照してください．
 - **`packages/`**
-  複数のアプリケーションから再利用されるコードが配置されます．（ユーザ定義パッケージという位置づけでしょう．）
-  たとえば，複数のプロジェクトで再利用される設定，再利用されるUIコンポーネントなどを配置します．
-  `packages/`配下の詳しい運用方針については，[パッケージの配置方針](packages/package-layout.DESG.md)を参照してください．
+  複数のアプリケーションから再利用されるコードが配置されます．（ユーザ定義パッケージという位置づけです．）
 - **`scripts/`:**
   このディレクトリの配下には，ローカル（開発環境）で実行されるスクリプトが配置されます．
   たとえば，テスト用のデータの自動投入スクリプトなどはここに配置されます．
   `packages/`配下にも`package-script/`がありますが，`package-script/`には文脈がパッケージ単位に閉じたスクリプト，`scripts/`には文脈がリポジトリにまたがるスクリプトを配置する形で使い分けます．
 - **`docs/`:**
   グローバル文書を役割別に配置する別の Git リポジトリです．
-  文書配置については[文書運用規則](https://github.com/nu-shinkan-project/docs/policy/documentation.md)を確認してください．
+  文書配置については[文書運用規則](https://github.com/nu-shinkan-project/docs/blob/main/policy/documentation.md)を確認してください．
   メインリポジトリでは Git 管理対象外です．
   AIエージェントへの指示の整合性のため，リポジトリルートにクローンしてください．
 - **`templates/`:**
