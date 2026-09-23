@@ -88,7 +88,7 @@ pnpm sync
 ```
 
 `packages/app-config/globalRuntimeEnvs.yaml`や各パッケージの`deployment.yaml`に基づいて，
-設定ファイル（`.env.developmen`, `wrangler.jsonc`）の内容を最新化します．
+設定ファイル（`.env.development`, `wrangler.jsonc`）の内容を最新化します．
 
 `packages/app-config/globalRuntimeEnvs.yaml`の詳しい書き方は[configuration-design](docs/design/configuration-design.md)を参照してください．
 
