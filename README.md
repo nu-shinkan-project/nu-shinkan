@@ -60,14 +60,46 @@ git clone https://github.com/nu-shinkan-project/docs.git docs
 
 実装計画書や，調査報告書など，gitのライフサイクルで管理することが適当でない文書はここに配置してください．
 
-## 開発環境
+## コマンド
 
-このリポジトリでは，以下のツールを採用しています．
+開発を便利に進めるために，いくつかのスクリプトやコマンドが用意されています．
+ここで示すコマンドは，リポジトリルートで実行してください．
 
-- パッケージマネージャ: **pnpm**
-- ビルドツール: **turborepo**
+### `make:frontend`：フロントエンドパッケージの生成
 
-また，近年パッケージマネージャを介してクレデンシャルが剽窃されるインシデントが多発しているため，基本的には**devcontainer**を利用して隔離環境下で開発をすすめます．
+```sh
+pnpm make:frontend
+```
+
+対話的にアプリ名を入力すると，`templates/frontend-template/`をもとに`apps/<アプリ名>/`へフロントエンドパッケージを生成します．開発用ポートを自動で割り当て，依存関係をインストールします．
+
+### `make:backend`：バックエンドパッケージの生成
+
+```sh
+pnpm make:backend
+```
+
+対話的にアプリ名を入力すると，`templates/backend-template/`をもとに`apps/<アプリ名>/`へバックエンドパッケージを生成します．開発用・Inspector用ポートを自動で割り当て，依存関係のインストールとCloudflareの型生成を実行します．
+
+### `sync`：共有の設定値の同期など
+
+```sh
+pnpm sync
+```
+
+`packages/app-config/globalRuntimeEnvs.yaml`や各パッケージの`deployment.yaml`に基づいて，
+設定ファイル（`.env.developmen`, `wrangler.jsonc`）の内容を最新化します．
+
+`packages/app-config/globalRuntimeEnvs.yaml`の詳しい書き方は[configuration-design](docs/design/configuration-design.md)を参照してください．
+
+### `dev`: ローカルサーバの立ち上げ
+
+```sh
+pnpm dev
+```
+
+すべてのローカルサーバ（動作検証用サーバ）をまとめて立ち上げます．
+このときのTUI画面は，マウス操作も可能です．
 
 ## デプロイ
 
@@ -78,3 +110,12 @@ CI/CDの設定により，開発者は
 - タグの付け替え
 
 によってデプロイをトリガーすることが可能です．
+
+## 開発環境
+
+このリポジトリでは，以下のツールを採用しています．
+
+- パッケージマネージャ: **pnpm**
+- ビルドツール: **turborepo**
+
+また，近年パッケージマネージャを介してクレデンシャルが剽窃されるインシデントが多発しているため，基本的には**devcontainer**を利用して隔離環境下で開発をすすめます．
