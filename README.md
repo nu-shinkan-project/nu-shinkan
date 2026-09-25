@@ -28,4 +28,4 @@ git clone https://github.com/nu-shinkan-project/docs.git docs
 
 ## 人間向けドキュメント
 
-リポジトリの運用方法などについて説明した人間向けドキュメント（正しさや厳密さより，わかりやすさを優先したドキュメント）は，[docsリポジトリ](https://github.com/nu-shinkan-project/docs)の[`guidance/`](https://github.com/nu-shinkan-project/docs/tree/main/guidance)に保管されています．
+リポジトリの運用方法について，正しさや厳密さより，わかりやすさを優先して説明したドキュメントは，[docsリポジトリ](https://github.com/nu-shinkan-project/docs)の[`explanation/repo`](https://github.com/nu-shinkan-project/docs/tree/main/explanation/guide)に保管されています．
