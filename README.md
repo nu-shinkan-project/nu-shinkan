@@ -170,8 +170,12 @@ viteでは，プレフィックスに`VITE_`とついた環境変数は，ビル
 
 ここから，バックエンドパッケージにおいて実行時環境変数（クラウドにアップロードされる変数）を指定する方法を説明します．
 
-cloudflareでは，`wrangler.jsonc`というファイルでデプロイの設定を行います．`wrangler.jsonc`は，コメントができるJSON形式のファイルです．
-`wrangler.jsonc`の"vars"フィールドの内容が，クラウドサーバにおいて環境変数として設定されます．
+cloudflareでは，`wrangler.jsonc`というファイルでデプロイの設定を行います．`wrangler.jsonc`は，
+コメントができるJSON形式のファイルです．`wrangler.jsonc`の"vars"フィールドの内容は，
+ローカルサーバ (`pnpm dev`で立ち上がる開発用サーバ) においても，クラウドサーバにおいて環境変数として設定されます．
+
+また，デプロイ先によって環境変数の定義を変更したい場合は，`development.yaml`に記述します．
+`deployment.yaml`の詳しい書き方は[configuration-design](docs/design/configuration-design.md)を参照してください．
 
 ### 複数のパッケージで共有される環境変数
 
