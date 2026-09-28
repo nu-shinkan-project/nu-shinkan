@@ -215,9 +215,9 @@ importers:
       '@repo/app-config':
         specifier: workspace:*
         version: link:../../packages/app-config
-      '@repo/package-script':
+      '@repo/deployment-scripts':
         specifier: workspace:*
-        version: link:../../packages/package-script
+        version: link:../../packages/deployment-scripts
       eslint:
         specifier: ^10.9.0
         version: 10.9.1(jiti@2.7.0)(supports-color@10.2.2)
@@ -264,9 +264,9 @@ importers:
       '@repo/app-config':
         specifier: workspace:*
         version: link:../../packages/app-config
-      '@repo/package-script':
+      '@repo/deployment-scripts':
         specifier: workspace:*
-        version: link:../../packages/package-script
+        version: link:../../packages/deployment-scripts
       '@tanstack/router-plugin':
         specifier: ^1.168.35
         version: 1.168.35(@tanstack/react-router@1.170.32(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(esbuild@0.28.2)(rolldown@1.2.7)(supports-color@10.2.2)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
@@ -376,7 +376,7 @@ importers:
         specifier: 8.68.0
         version: 8.68.0(@typescript/typescript6@6.0.2)(eslint@10.9.1(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
 
-  packages/package-script:
+  packages/deployment-scripts:
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1
@@ -436,7 +436,7 @@ importers:
         specifier: 7.0.2
         version: 7.0.2
 
-  scripts:
+  tools:
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1
@@ -481,9 +481,9 @@ importers:
       '@repo/app-config':
         specifier: workspace:*
         version: link:../../packages/app-config
-      '@repo/package-script':
+      '@repo/deployment-scripts':
         specifier: workspace:*
-        version: link:../../packages/package-script
+        version: link:../../packages/deployment-scripts
       eslint:
         specifier: ^10.9.0
         version: 10.9.1(jiti@2.7.0)(supports-color@10.2.2)
@@ -527,9 +527,9 @@ importers:
       '@repo/app-config':
         specifier: workspace:*
         version: link:../../packages/app-config
-      '@repo/package-script':
+      '@repo/deployment-scripts':
         specifier: workspace:*
-        version: link:../../packages/package-script
+        version: link:../../packages/deployment-scripts
       '@tanstack/router-plugin':
         specifier: ^1.168.35
         version: 1.168.35(@tanstack/react-router@1.170.32(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(esbuild@0.28.2)(rolldown@1.2.7)(supports-color@10.2.2)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))

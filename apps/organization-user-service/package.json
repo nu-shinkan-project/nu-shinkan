@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@repo/app-config": "workspace:*",
-    "@repo/package-script": "workspace:*",
+    "@repo/deployment-scripts": "workspace:*",
     "@cloudflare/workers-types": "^5.20260902.1",
     "@eslint/js": "^10.0.1",
     "eslint": "^10.9.0",

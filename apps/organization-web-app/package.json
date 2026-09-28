@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@repo/app-config": "workspace:*",
-    "@repo/package-script": "workspace:*",
+    "@repo/deployment-scripts": "workspace:*",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
     "@tanstack/router-plugin": "^1.168.35",

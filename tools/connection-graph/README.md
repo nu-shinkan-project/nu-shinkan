@@ -5,8 +5,8 @@
 キャッシュ可能性を考慮し，エントリーポイントとして，`build.ts`と`select.ts`を提供している．
 
 ```sh
-pnpm exec tsx scripts/connection-graph/build.ts > connection-graph.json
-pnpm exec tsx scripts/connection-graph/select.ts \
+pnpm exec tsx tools/connection-graph/build.ts > connection-graph.json
+pnpm exec tsx tools/connection-graph/select.ts \
   --graph connection-graph.json \
   @repo/dummy-preview-api > targets.json
 ```
@@ -15,8 +15,8 @@ pnpm exec tsx scripts/connection-graph/select.ts \
 
 ```sh
 set -o pipefail
-pnpm exec tsx scripts/connection-graph/build.ts |
-  pnpm exec tsx scripts/connection-graph/select.ts --graph - @repo/dummy-preview-api
+pnpm exec tsx tools/connection-graph/build.ts |
+  pnpm exec tsx tools/connection-graph/select.ts --graph - @repo/dummy-preview-api
 ```
 
 両 CLI とも結果の JSON を標準出力、警告・エラーを標準エラー出力へ書く。エラー時は終了コード 1。ファイルの保存先や GitHub Actions artifact へのアップロードは呼び出し側で決める。

@@ -1,14 +1,14 @@
 # リポジトリ全体の処理
 
-`packages/app-config` は単一パッケージの設定を読み取り、変換・生成する。`scripts/` はworkspace全体の設定収集、接続グラフ、設定同期を担当する。Node.js 24以上とpnpmを準備し、リポジトリルートで依存をインストールしてから実行する。app-configの利用には公開APIを使う。
+`packages/app-config` は単一パッケージの設定を読み取り、変換・生成する。`tools/` はリポジトリの構造を知っている開発補助コードを配置し、workspace全体の設定収集、接続グラフ、設定同期、アプリケーションの雛形作成を担当する。`packages/deployment-scripts/` は単一パッケージの設定を使うデプロイ補助処理を担当する。Node.js 24以上とpnpmを準備し、リポジトリルートで依存をインストールしてから実行する。app-configの利用には公開APIを使う。
 
 ## Workspace設定
 
 `workspace/root.ts` はカレントディレクトリから親を辿ってpnpm workspaceルートを探す。`workspace/configs.ts` の `getWorkspaceConfigurations(root?)` は `pnpm-workspace.yaml` のパターンと除外指定に従い、パッケージ名、絶対パス `path`、ルート相対パス `pathRel`、存在するWrangler・dotenv設定を返す。重複パッケージ名はエラーになる。
 
 ```sh
-pnpm exec tsx scripts/workspace/configs-cli.ts [--root <directory>]
-pnpm exec tsx scripts/workspace/configs-cli.ts --targets @repo/dummy-preview-api
+pnpm exec tsx tools/workspace/configs-cli.ts [--root <directory>]
+pnpm exec tsx tools/workspace/configs-cli.ts --targets @repo/dummy-preview-api
 ```
 
 通常のCLI出力は設定一覧で、Wranglerの内容をJSON化する。dotenvはapp-configと同じく `VITE_` 接頭辞の値だけを扱い、接頭辞を外す。設定値を含むため、一覧全体をActionsのログへ出す必要はない。
@@ -24,11 +24,11 @@ pnpm exec tsx scripts/workspace/configs-cli.ts --targets @repo/dummy-preview-api
 
 ## GitHub Actionsとの境界
 
-[再利用ワークフロー](../.github/workflows.DESG.md) がTurboによる差分・依存関係の選定と、テスト、build、deployを実行する。PRの権限・状態確認、排他、結果通知もワークフローが担当する。CLIはJSONを標準出力へ、警告・エラーを標準エラーへ返し、エラー時は終了コード1となる。
+[再利用ワークフロー](../docs/design/deploy-design.md) がTurboによる差分・依存関係の選定と、テスト、build、deployを実行する。PRの権限・状態確認、排他、結果通知もワークフローが担当する。CLIはJSONを標準出力へ、警告・エラーを標準エラーへ返し、エラー時は終了コード1となる。
 
 ```sh
-pnpm --filter @repo/scripts exec vitest run
-pnpm --filter @repo/scripts exec tsc --noEmit
+pnpm --filter @repo/tools exec vitest run
+pnpm --filter @repo/tools exec tsc --noEmit
 ```
 
-テストは設定収集、connection graph などの内部ロジックを検証する。検証対象は[テスト方針](../docs/policy/testing-policy.md)に従う。外部へのデプロイや通知は行わない。
+テストは設定収集、connection graph などの内部ロジックを検証する。検証対象は[テスト方針](../docs/policy/testing.md)に従う。外部へのデプロイや通知は行わない。

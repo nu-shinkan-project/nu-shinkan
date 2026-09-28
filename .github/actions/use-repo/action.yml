@@ -37,7 +37,7 @@ runs:
         pnpm clean
         pnpm install --frozen-lockfile --prefer-offline --filter=.
         pnpm turbo run bootstrap
-        pnpm install --frozen-lockfile --prefer-offline --filter=@repo/scripts...
+        pnpm install --frozen-lockfile --prefer-offline --filter=@repo/tools...
 
     - name: セットアップ完了フラグの設定
       if: env.REPO_SETUP_DONE != 'true'
