@@ -10,10 +10,10 @@ export function planPreview(sources, picked = []) {
       input,
       stdio: ["pipe", "pipe", "inherit"],
     });
-  const graph = run("scripts/connection-graph/build.ts");
+  const graph = run("tools/connection-graph/build.ts");
   const extent = JSON.parse(
     run(
-      "scripts/connection-graph/select.ts",
+      "tools/connection-graph/select.ts",
       ["--graph", "-", "--", ...sources],
       graph,
     ),
@@ -22,7 +22,7 @@ export function planPreview(sources, picked = []) {
   // Packages without a deploy task are removed by filter-util at execution time.
   const packages = [...new Set([...picked, ...extent])];
   const targets = JSON.parse(
-    run("scripts/workspace/configs-cli.ts", ["--targets", ...packages]),
+    run("tools/workspace/configs-cli.ts", ["--targets", ...packages]),
   );
   return { packages, targets };
 }

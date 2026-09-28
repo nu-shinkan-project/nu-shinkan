@@ -9,9 +9,9 @@
     "test": "turbo run test",
     "ui_test": "turbo run ui_test",
     "ui_test:prepare": "turbo run ui_test:prepare",
-    "sync": "tsx scripts/sync-env/sync.ts",
-    "make:backend": "tsx scripts/make-app/make-backend-app.ts",
-    "make:frontend": "tsx scripts/make-app/make-frontend-app.ts",
+    "sync": "tsx tools/sync-env/sync.ts",
+    "make:backend": "tsx tools/make-app/make-backend-app.ts",
+    "make:frontend": "tsx tools/make-app/make-frontend-app.ts",
     "prepare": "husky install"
   },
   "devDependencies": {

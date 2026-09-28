@@ -1,5 +1,5 @@
 {
-  "name": "@repo/scripts",
+  "name": "@repo/tools",
   "type": "module",
   "scripts": {
     "test": "vitest"

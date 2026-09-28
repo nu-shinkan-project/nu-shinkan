@@ -12,7 +12,7 @@ function main(): void {
   });
   if (!values.graph)
     throw new Error(
-      "Usage: tsx scripts/connection-graph/select.ts --graph <file|-> [package-name ...]",
+      "Usage: tsx tools/connection-graph/select.ts --graph <file|-> [package-name ...]",
     );
   const graph = ConnectionGraph.fromJSON(
     JSON.parse(readFileSync(values.graph === "-" ? 0 : values.graph, "utf8")),

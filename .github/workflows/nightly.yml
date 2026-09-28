@@ -13,6 +13,6 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/use-repo
       - name: ワークフローツールの型チェック
-        run: pnpm --filter @repo/scripts exec tsc --noEmit
+        run: pnpm --filter @repo/tools exec tsc --noEmit
       - uses: ./.github/actions/vi-test
       - uses: ./.github/actions/ui-test

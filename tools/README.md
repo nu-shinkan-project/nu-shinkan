@@ -3,8 +3,8 @@
 Node.js 24 以上と pnpm、およびリポジトリの依存関係を準備し、リポジトリルートで実行する。
 
 ```sh
-pnpm exec tsx scripts/workspace/configs-cli.ts
-pnpm exec tsx scripts/workspace/configs-cli.ts --targets @repo/dummy-preview-api
+pnpm exec tsx tools/workspace/configs-cli.ts
+pnpm exec tsx tools/workspace/configs-cli.ts --targets @repo/dummy-preview-api
 pnpm sync --dry-run
 pnpm sync
 ```
