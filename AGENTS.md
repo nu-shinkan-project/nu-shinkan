@@ -13,4 +13,8 @@ If `docs/` is missing or unavailable at that location, stop the task and report 
 
 Before performing substantial repository work, follow:
 
-`docs/instructions/context-discovery.md`
+[context-discovery](.agents/skills/context-discovery/SKILL.md).
+
+Read its SKILL.md and perform the discovery workflow; automatic skill selection
+is not a prerequisite. If the published link cannot be followed, read
+`docs/.agents/skills/context-discovery/SKILL.md` directly.
