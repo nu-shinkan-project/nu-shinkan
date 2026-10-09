@@ -4,30 +4,30 @@
 
 ## 用途を判定する例
 
-| Type                | Examples                                                                                 |
-| ------------------- | ---------------------------------------------------------------------------------------- |
-| Discussion document | Status summaries, proposed implementation plans, work reports, discussion records.       |
-| Reference document  | Tool and command guides, onboarding materials, design documents, operational procedures. |
+| 種別                              | 例                                                       |
+| --------------------------------- | -------------------------------------------------------- |
+| 議論用文書（Discussion document） | 現状の要約、実装計画案、作業報告、議論の記録。           |
+| 参照用文書（Reference document）  | ツールやコマンドのガイド、導入資料、設計文書、運用手順。 |
 
 ## 構成の例
 
-- For a guide, explain what the tool does, what is required, how to use it, and how to recognize success.
-- For a design document, explain the problem and constraints, the design, and the reasons for consequential choices.
+- ガイドでは、ツールの役割、必要な準備、使い方、成功を確認する方法を説明する。
+- 設計文書では、問題と制約、設計、重要な選択の理由を説明する。
 
 ## 記述の例
 
-For example, if the agreed procedure is to run validation before deployment:
+デプロイ前に検証する手順が合意されている場合の例を示す。
 
-- Avoid: "We first planned to deploy immediately, but then agreed to add validation."
-- Prefer: "Run validation before deployment to catch configuration errors before they reach the deployed environment."
+- 避けたい例：「当初はすぐにデプロイする予定だったが、その後、検証を加えることに合意した。」
+- 書き方の例：「設定の誤りをデプロイ先に反映しないよう、デプロイ前に検証を実行する。」
 
 ## 仕上げ確認
 
-Check the following and revise any item that fails:
+以下を確認し、満たしていない項目を修正する。
 
-- Can a reader identify the document's purpose without reading the chat?
-- Are necessary concepts and prerequisites introduced before they are used?
-- Can the reader follow the explanation or procedure using the document and its linked references?
-- Does the structure follow the reader's needs rather than the chronology of the conversation?
-- Are final decisions, proposals, and unresolved questions clearly distinguished where applicable?
-- Have edits been integrated without leaving contradictory or outdated statements?
+- 会話を読まなくても文書の目的が分かるか。
+- 必要な概念や前提条件を、使う前に説明しているか。
+- 文書とリンク先の参照資料を使って、説明や手順を追えるか。
+- 会話の時系列ではなく、読者の必要に沿った構成になっているか。
+- 最終決定、提案、未解決の問いを、必要に応じて区別しているか。
+- 編集内容を本文に統合し、矛盾や古い記述が残らないようにしているか。
