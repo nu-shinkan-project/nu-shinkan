@@ -1,6 +1,6 @@
 ---
 name: edit-deployment-config
-description: "deployment.yamlの環境差分・パッケージ接続・reviewEntryを、既存設定設計とローダーに沿って編集し、previewへの影響を確認する。"
+description: "deployment.yamlの環境差分・パッケージ接続・reviewEntryを、設定設計とローダーに沿って編集し、previewへの影響を確認する。"
 ---
 
 # deployment.yamlの編集
