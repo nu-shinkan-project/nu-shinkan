@@ -4,10 +4,10 @@
 
 ## 用途を判定する例
 
-| Type                | Intended use                                                                                               | Examples                                                                                 |
-| ------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Discussion document | Help participants in the current conversation review progress, discuss options, or decide what to do next. | Status summaries, proposed implementation plans, work reports, discussion records.       |
-| Reference document  | Help readers understand or perform something without access to the current conversation.                   | Tool and command guides, onboarding materials, design documents, operational procedures. |
+| Type                | Examples                                                                                 |
+| ------------------- | ---------------------------------------------------------------------------------------- |
+| Discussion document | Status summaries, proposed implementation plans, work reports, discussion records.       |
+| Reference document  | Tool and command guides, onboarding materials, design documents, operational procedures. |
 
 ## 構成の例
 
