@@ -31,6 +31,6 @@ pnpm prepare
 # Wiki Repo Setup
 # ---------------------------
 
-if [[ ! -d "$target_dir" ]]; then
+if [[ ! -d "docs" ]]; then
   git clone --depth 1 https://github.com/nu-shinkan-project/docs.git
 fi
