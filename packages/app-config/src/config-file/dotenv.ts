@@ -18,7 +18,7 @@ export class Dotenv {
 
   constructor(packagePath: string = cwd()) {
     this.src = resolve(packagePath, ".env.development");
-    this.gen = resolve(packagePath, ".env.deploy");
+    this.gen = resolve(packagePath, ".env.production");
   }
 
   exists(): boolean {

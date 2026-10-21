@@ -1,3 +1,4 @@
+import { resourcePatch } from "./resources.js";
 import { WranglerJsonc } from "../config-file/wrangler.jsonc.js";
 import type { Context } from "./context.js";
 import {
@@ -12,8 +13,10 @@ import type { Settings } from "./settings.js";
 export function generateWranglerJsonc(
   settings: Settings,
   context: Context,
+  packagePath?: string,
+  databases: ReadonlyMap<string, string> = new Map(),
 ): void {
-  const wranglerJsonc = new WranglerJsonc();
+  const wranglerJsonc = new WranglerJsonc(packagePath);
   if (!wranglerJsonc.exists()) return;
 
   const name = buildWorkerName(wranglerJsonc.name, context);
@@ -28,5 +31,8 @@ export function generateWranglerJsonc(
     services: resolveServiceBindings(wranglerJsonc.services, settings, context),
   });
   if (context.channel === "preview") wranglerJsonc.useWorkersDev();
+  wranglerJsonc.update(
+    resourcePatch(wranglerJsonc.data, context.profile, databases),
+  );
   wranglerJsonc.genDeployment();
 }

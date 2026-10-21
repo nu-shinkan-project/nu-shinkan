@@ -10,21 +10,20 @@ export function resolvePreviewVariables(
   context: Context,
 ): Variables {
   const result = { ...values };
-  if (context.channel !== "preview") return result;
-
   for (const [key, pkg] of Object.entries(
     settings.deployment.connections.urls,
   )) {
-    // 今回のpreview対象外への接続は、基準となるstaging設定を維持する。
     const target = context.targets.get(pkg);
-    if (!target) continue;
-    const name = target.workerName;
-    if (!name) throw new Error(`No Worker for URL connection: ${pkg}`);
-    if (!values[key]) throw new Error(`Missing base URL: ${key}`);
-    // 接続先をpreview用のHTTPS URLへ変え、元URLのパス・クエリは保持する。
-    const url = new URL(values[key]);
+    const worker = target?.workerName ?? context.workers?.get(pkg);
+    const preview = context.channel === "preview" && target !== undefined;
+    if (!preview && values[key]) continue;
+    if (!worker) throw new Error(`No Worker for URL connection: ${pkg}`);
+    const destination = preview
+      ? context
+      : { channel: context.profile, prNumber: context.prNumber };
+    const url = new URL(values[key] || "https://placeholder/");
     url.protocol = "https:";
-    url.hostname = `${buildWorkerName(name, context)}.nushinkan2.workers.dev`;
+    url.hostname = `${buildWorkerName(worker, destination)}.nushinkan2.workers.dev`;
     url.port = "";
     result[key] = url.toString();
   }
@@ -67,7 +66,7 @@ export function buildWorkerName(
 ): string {
   const suffix =
     context.channel === "preview"
-      ? `preview-pr-${context.prNumber}`
+      ? `preview-${context.prNumber}`
       : context.channel;
   return `${name}-${suffix}`;
 }

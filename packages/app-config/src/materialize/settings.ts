@@ -11,8 +11,8 @@ export type Settings = {
 };
 // Main Logic
 
-export function readSettings(context: Context): Settings {
-  const deployment = new DeploymentYaml();
+export function readSettings(context: Context, packagePath?: string): Settings {
+  const deployment = new DeploymentYaml(packagePath);
   const { profile } = context;
   return {
     deployment,

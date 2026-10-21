@@ -30,9 +30,9 @@ it("resolves overrides and preview URLs without exposing dotenv prefixes to mate
         ]),
       }),
     );
-    const result = readFileSync(join(root, ".env.deploy"), "utf8");
+    const result = readFileSync(join(root, ".env.production"), "utf8");
     expect(result).toContain(
-      'VITE_API="https://api-preview-pr-42.nushinkan2.workers.dev/path"',
+      'VITE_API="https://api-preview-42.nushinkan2.workers.dev/path"',
     );
     expect(result).toContain('VITE_KEEP="native"');
     expect(result).toContain('VITE_ENV="deployment"');

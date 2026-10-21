@@ -69,7 +69,7 @@ it.each(["staging", "release", "preview"] as const)(
     });
     expect(result.vars?.SELF).toBe(
       channel === "preview"
-        ? "https://bare-api-preview-pr-42.nushinkan2.workers.dev/api/"
+        ? "https://bare-api-preview-42.nushinkan2.workers.dev/api/"
         : `https://bare-api-${channel}.example/api/`,
     );
   },

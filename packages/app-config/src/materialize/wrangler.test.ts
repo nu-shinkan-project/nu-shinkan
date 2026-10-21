@@ -45,12 +45,12 @@ describe("Wrangler materialize", () => {
       context,
     );
     expect(result).toMatchObject({
-      name: "web-preview-pr-42",
+      name: "web-preview-42",
       main: "src/worker.ts",
       assets: { directory: "./dist" },
       vars: { ENV: "deployment" },
       services: [
-        { binding: "API", service: "api-preview-pr-42" },
+        { binding: "API", service: "api-preview-42" },
         { binding: "OTHER", service: "other-staging" },
       ],
     });

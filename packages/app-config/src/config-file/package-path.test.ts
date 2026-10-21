@@ -79,7 +79,7 @@ it("modifies and generates files only in the specified package", () => {
   wrangler.update({ name: "deploy" });
   dotenv.genDeployment();
   wrangler.genDeployment();
-  expect(readFileSync(join(first, ".env.deploy"), "utf8")).toBe(
+  expect(readFileSync(join(first, ".env.production"), "utf8")).toBe(
     'VITE_NAME="deploy"',
   );
   expect(
