@@ -4,75 +4,13 @@ on:
     tags: [staging, release]
 permissions:
   contents: read
-env:
-  CHANNEL: ${{ github.ref_name }}
-  HEAD_SHA: ${{ github.event.after }}
-  BASE_SHA: ${{ github.event.before }}
 jobs:
-  inputs-validation:
-    runs-on: ubuntu-latest
-    steps:
-      - name: 入力値の検証
-        env:
-          CHANNEL: ${{ env.CHANNEL }}
-        run: '[[ "$CHANNEL" == staging || "$CHANNEL" == release ]]'
-  updatability-check:
-    needs: inputs-validation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ env.HEAD_SHA }}
-          fetch-depth: 0
-          persist-credentials: false
-      - name: HEADはBASEの先祖か確認
-        id: check
-        shell: bash
-        run: git merge-base --is-ancestor ${{ env.BASE_SHA }} ${{ env.HEAD_SHA }}
-  full-deploy-fallback:
-    needs: [updatability-check, inputs-validation]
-    if: ${{ needs.updatability-check.result == 'failure' }}
-    uses: ./.github/workflows/update.full-deploy.yml
+  update-deploy:
+    if: ${{ !github.event.deleted }}
+    uses: ./.github/workflows/deploy.run.yml
     secrets: inherit
     with:
+      entry: update
       channel: ${{ github.ref_name }}
-      head_sha: ${{ github.event.after }}
-  update-deploy:
-    needs: [updatability-check, inputs-validation]
-    if: ${{ needs.updatability-check.result == 'success' }}
-    concurrency:
-      group: deploy-channel-${{ github.ref_name }}
-      queue: max
-      cancel-in-progress: false
-    runs-on: ubuntu-latest
-    environment: ${{ github.ref_name }}
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ env.HEAD_SHA }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: ./.github/actions/use-repo
-        with:
-          context: ${{ env.CHANNEL }}
-      - parallel:
-        - id: unit-tests
-          uses: ./.github/actions/vi-test
-          with:
-            filter: "[${{ env.BASE_SHA }}...${{ env.HEAD_SHA }}]"
-        - id: ui-tests
-          uses: ./.github/actions/ui-test
-          with:
-            filter: "[${{ env.BASE_SHA }}...${{ env.HEAD_SHA }}]"
-        - id: lint
-          uses: ./.github/actions/lint
-          with:
-            filter: "[${{ env.BASE_SHA }}...${{ env.HEAD_SHA }}]"
-      - name: デプロイの実行
-        uses: ./.github/actions/deploy
-        with:
-          filter: "...[${{ env.BASE_SHA }}...${{ env.HEAD_SHA }}]"
-          channel: ${{ env.CHANNEL }}
+      commit: ${{ github.sha }}
+      base: ${{ github.event.before || '' }}

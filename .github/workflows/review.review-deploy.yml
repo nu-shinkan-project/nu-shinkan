@@ -6,55 +6,14 @@ on:
 permissions:
   contents: read
   pull-requests: write
-concurrency:
-  group: preview-pr-${{ github.event.pull_request.number }}
-  queue: single
-  cancel-in-progress: false
-env:
-  PR_NUMBER: ${{ github.event.pull_request.number }}
-  HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-  BASE_SHA: ${{ github.event.pull_request.base.sha }}
 jobs:
   review-deploy:
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
-    runs-on: ubuntu-latest
-    environment: preview
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ env.HEAD_SHA }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: ./.github/actions/use-repo
-        with:
-          context: preview-${{ env.PR_NUMBER }}
-      - parallel:
-          - uses: ./.github/actions/ui-test
-            with:
-              filter: "[${{ env.BASE_SHA }}...${{ env.HEAD_SHA }}]"
-          - uses: ./.github/actions/vi-test
-            with:
-              filter: "[${{ env.BASE_SHA }}...${{ env.HEAD_SHA }}]"
-          - uses: ./.github/actions/lint
-            with:
-              filter: "[${{ env.BASE_SHA }}...${{ env.HEAD_SHA }}]"
-      - id: preview
-        uses: ./.github/actions/preview-deploy
-        with:
-          filter: "...[${{ env.BASE_SHA }}...${{ env.HEAD_SHA }}]"
-          head_sha: ${{ env.HEAD_SHA }}
-          base_sha: ${{ env.BASE_SHA }}
-          pr_number: ${{ env.PR_NUMBER }}
-
-      - name: プレビュー準備失敗の通知
-        if: ${{ failure() && steps.preview.outcome == 'skipped' }}
-        uses: ./.github/actions/comment-result
-        with:
-          pr_number: ${{ env.PR_NUMBER }}
-          marker: preview-preparation-failure
-          title: Preview Preparation Failure
-          status: failure
-          body: Preview preparation failed. Check the workflow run logs for details.
+    uses: ./.github/workflows/deploy.run.yml
+    secrets: inherit
+    with:
+      entry: review
+      channel: preview
+      commit: ${{ github.event.pull_request.head.sha }}
+      base: ${{ github.event.pull_request.base.sha }}
+      pr: ${{ format('{0}', github.event.pull_request.number) }}

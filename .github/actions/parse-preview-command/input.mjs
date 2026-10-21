@@ -13,19 +13,3 @@ export function parsePreviewCommand(body) {
     );
   return packages;
 }
-
-export function checkExistence(packages, listing) {
-  const items = listing?.packages?.items;
-  if (
-    !Array.isArray(items) ||
-    items.some((pkg) => typeof pkg?.name !== "string")
-  )
-    throw new Error("Invalid Turbo package listing");
-  const names = new Set(items.map((pkg) => pkg.name));
-  const missing = packages.filter((name) => !names.has(name));
-  if (missing.length)
-    throw new Error(
-      `Unknown packages: ${missing.join(", ")}. Usage: /preview <package-name> ...`,
-    );
-  return packages;
-}

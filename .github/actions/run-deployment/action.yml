@@ -1,0 +1,33 @@
+name: デプロイCLIの呼び出し
+description: GitHubで受け付けた固定SHAの要求をデプロイCLIへ渡します。
+inputs:
+  entry:
+    required: true
+    description: update/full/review/manual-pick/cleanup
+  channel:
+    required: true
+    description: preview/staging/release
+  commit:
+    required: true
+    description: 受付時に固定した対象SHA
+  base:
+    default: ""
+    description: 比較元SHA（欠如時は空文字）
+  pr:
+    default: ""
+    description: PR番号
+  picked:
+    default: "[]"
+    description: 指定パッケージのJSON配列
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        DEPLOY_ENTRY: ${{ inputs.entry }}
+        DEPLOY_CHANNEL: ${{ inputs.channel }}
+        DEPLOY_COMMIT: ${{ inputs.commit }}
+        DEPLOY_BASE: ${{ inputs.base }}
+        DEPLOY_PR: ${{ inputs.pr }}
+        DEPLOY_PICKED: ${{ inputs.picked }}
+      run: node "$GITHUB_ACTION_PATH/invoke.mjs"

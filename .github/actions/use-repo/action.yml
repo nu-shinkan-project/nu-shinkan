@@ -1,45 +1,52 @@
 name: リポジトリセットアップ
-description: ワークフローでパッケージ依存関係を使用するためのセットアップ手順を定義します。
-
+description: 全workspaceの依存関係と共有ツールを準備し、Turboキャッシュを復元します。
 inputs:
   context:
-    description: Turboキャッシュ用のキャッシュキー。既定値はトリガーイベントのコミットハッシュ。
-    required: false
-    default: ${{ github.sha }}
-
+    description: PRまたはchannel単位のキャッシュ名前空間
+    default: tooling
+  cache:
+    description: falseの場合はTurboキャッシュを復元しない
+    default: "true"
+outputs:
+  cache-key:
+    description: このrun専用の保存キー
+    value: turbo-${{ runner.os }}-${{ inputs.context }}-${{ github.run_id }}-${{ github.run_attempt }}
 runs:
-  using: "composite"
+  using: composite
   steps:
-    - if: env.REPO_SETUP_DONE != 'true'
-      uses: pnpm/action-setup@v6.1.0
-
-    - if: env.REPO_SETUP_DONE != 'true'
-      uses: actions/setup-node@v7
+    - uses: pnpm/action-setup@v6.1.0
+    - uses: actions/setup-node@v7
       with:
-        node-version: '24'
+        node-version: "24"
         cache: pnpm
         cache-dependency-path: pnpm-lock.yaml
-
-    - name: Turboキャッシュの準備
-      if: env.REPO_SETUP_DONE != 'true'
-      uses: actions/cache@v6
+    - name: Turboキャッシュの復元（失敗時は通常実行）
+      if: inputs.cache == 'true'
+      id: restore
+      continue-on-error: true
+      uses: actions/cache/restore@v6
       with:
-        path: |
-          .turbo
-          node_modules/.cache/turbo
-        key: turbo-${{ runner.os }}-${{ inputs.context || github.sha }}
-
-    - name: 標準依存関係のインストール
+        path: .turbo/cache
+        key: turbo-${{ runner.os }}-${{ inputs.context }}-${{ github.run_id }}-${{ github.run_attempt }}
+        restore-keys: turbo-${{ runner.os }}-${{ inputs.context }}-
+    - name: キャッシュ状態
       shell: bash
       env:
-        HUSKY: 0
+        CACHE_ENABLED: ${{ inputs.cache }}
+        CACHE_HIT: ${{ steps.restore.outputs.cache-hit }}
+        CACHE_OUTCOME: ${{ steps.restore.outcome }}
       run: |
-        pnpm clean
-        pnpm install --frozen-lockfile --prefer-offline --filter=.
-        pnpm turbo run bootstrap
-        pnpm install --frozen-lockfile --prefer-offline --filter=@repo/tools...
-
-    - name: セットアップ完了フラグの設定
-      if: env.REPO_SETUP_DONE != 'true'
+        if [[ "$CACHE_ENABLED" != true ]]; then
+          echo '[setup] Turbo cache disabled for this event; no cross-ref sharing workaround is used.'
+        else
+          echo "[setup] Turbo cache restore: $CACHE_OUTCOME; exact hit: ${CACHE_HIT:-false}"
+        fi
+    - name: 全workspaceの依存関係と設定ツールの準備
       shell: bash
-      run: echo "REPO_SETUP_DONE=true" >> "$GITHUB_ENV"
+      env:
+        HUSKY: "0"
+      run: |
+        echo '[setup] Installing dependencies for sync, checks, configuration, build and deployment.'
+        pnpm install --frozen-lockfile --prefer-offline
+        pnpm --filter @repo/app-config build
+        echo '[setup] Dependencies and app-config are ready.'
