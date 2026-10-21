@@ -2,6 +2,7 @@ import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 import { rmSync } from "node:fs";
 import { findWorkspaceRoot } from "../workspace/root.js";
+import { commandFailure } from "./diagnostics.js";
 import { command } from "./command.js";
 import { plan, inventory } from "./plan.js";
 import { configure } from "./configure.js";
@@ -77,11 +78,9 @@ export async function run(entry: Entry, args: string[]): Promise<number> {
   const path = resolve(root, reportPath);
   rmSync(path, { force: true });
   const actual = await command("git", ["rev-parse", "HEAD"], root, true);
-  if (
-    actual.status !== "completed" ||
-    actual.code !== 0 ||
-    actual.stdout.trim() !== request.commit
-  )
+  if (actual.status !== "completed" || actual.code !== 0)
+    throw new Error(commandFailure(actual, "Cannot inspect checkout"));
+  if (actual.stdout.trim() !== request.commit)
     throw new Error("Checkout does not match the requested commit");
   const credentials = {
     account: process.env.CLOUDFLARE_ACCOUNT_ID ?? "",
@@ -111,7 +110,7 @@ export async function run(entry: Entry, args: string[]): Promise<number> {
         ? { status: "synced" }
         : {
             status: "sync-failed",
-            reason: "Repository synchronization failed",
+            reason: commandFailure(result, "Repository synchronization failed"),
           };
     },
     checks: (p) => checks(root, select(p.affected)),
@@ -126,5 +125,7 @@ export async function run(entry: Entry, args: string[]): Promise<number> {
   console.log(
     `[deploy] Result: ${outcome.state.status}; report: ${outcome.report.status}`,
   );
+  if (outcome.report.status === "report-failed")
+    console.error(outcome.report.reason);
   return outcome.exitCode;
 }

@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { DeploymentYaml, type Deployment } from "@repo/app-config/deployment";
 import { ConnectionGraph } from "../connection-graph/graph.js";
 import { getWorkspaceConfigurations } from "../workspace/configs.js";
+import { commandFailure, errorDetail } from "./diagnostics.js";
 import { command } from "./command.js";
 import type { Package, Request, Planning, Source } from "./types.js";
 
@@ -184,15 +185,16 @@ export async function plan(request: Request, root: string): Promise<Planning> {
   let data: Inventory;
   try {
     data = inventory(root, request);
-  } catch {
+  } catch (error) {
     return {
       status: "unavailable",
-      reason: "Cannot read workspace configuration",
+      reason: `Cannot read workspace configuration: ${errorDetail(error)}`,
       unknownPackages: [],
     };
   }
   let files: string[] = [],
     available = request.source !== "diff";
+  let comparisonFailure: string | undefined;
   if (request.source === "diff" && request.base) {
     const comparison =
       request.purpose === "review"
@@ -204,17 +206,19 @@ export async function plan(request: Request, root: string): Promise<Planning> {
         : [comparison, request.commit];
     const diff = await command(
       "git",
-      ["diff", "--name-only", "-z", ...args, "--"],
+      ["diff", "--no-renames", "--name-only", "-z", ...args, "--"],
       root,
       true,
     );
     available = diff.status === "completed" && diff.code === 0;
     if (available) files = diff.stdout.split("\0").filter(Boolean);
+    else comparisonFailure = commandFailure(diff, "Git comparison failed");
   }
   const selection = collectOrigins(request, data.packages, {
     files,
     available,
   });
+  if (comparisonFailure) selection.fallback += `: ${comparisonFailure}`;
   if (selection.unknown.length)
     return {
       status: "invalid",
@@ -238,7 +242,7 @@ export async function plan(request: Request, root: string): Promise<Planning> {
     if (result.status !== "completed" || result.code !== 0)
       return {
         status: "unavailable",
-        reason: "Turbo dependency selection failed",
+        reason: commandFailure(result, "Turbo dependency selection failed"),
         unknownPackages: [],
       };
     try {
@@ -256,10 +260,10 @@ export async function plan(request: Request, root: string): Promise<Planning> {
       affected = data.packages
         .filter((p) => expanded.has(p.name))
         .map((p) => p.name);
-    } catch {
+    } catch (error) {
       return {
         status: "unavailable",
-        reason: "Invalid Turbo dependency selection",
+        reason: `Invalid Turbo dependency selection: ${errorDetail(error)}`,
         unknownPackages: [],
       };
     }

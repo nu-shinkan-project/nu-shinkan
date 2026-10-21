@@ -1,3 +1,4 @@
+import { errorDetail } from "./diagnostics.js";
 import { generate } from "@repo/app-config/materialize";
 import { getWorkspaceConfigurations } from "../workspace/configs.js";
 import { listDatabases, matchDatabase, type Cloudflare } from "./cloudflare.js";
@@ -84,12 +85,11 @@ export async function configure(
   for (const p of configs.filter((p) => targets.has(p.packageName))) {
     try {
       generate(p.path, context, ids);
-    } catch {
+    } catch (error) {
       return {
         status: "configuration-failed",
         package: p.packageName,
-        reason:
-          "Cannot generate deployment configuration; check native configuration and connections",
+        reason: `Cannot generate deployment configuration: ${errorDetail(error, [credentials.token])}`,
       };
     }
   }

@@ -46,7 +46,7 @@ it("deletes serially, continues after failure and aggregates partial results", a
       );
     return _url.includes("a-preview-12")
       ? new Response("", { status: 503 })
-      : new Response(JSON.stringify({ success: true, result: null }));
+      : new Response(JSON.stringify({ success: true }));
   });
   vi.stubGlobal("fetch", fetcher);
   const result = await cleanup(12, credentials);
@@ -82,6 +82,7 @@ it.each([{ workers: [] }, { workers: [{ id: "api-staging" }] }])(
 it.each([
   new Response("", { status: 403 }),
   new Response(JSON.stringify({ success: true, result: [{}] })),
+  new Response(JSON.stringify({ success: true })),
 ])("stops before deletion if listing fails", async (response) => {
   const fetcher = vi.fn().mockResolvedValue(response);
   vi.stubGlobal("fetch", fetcher);
@@ -97,4 +98,23 @@ it("rejects invalid input without any external request", async () => {
     status: "invalid-request",
   });
   expect(fetcher).not.toHaveBeenCalled();
+});
+
+it("accepts a successful deletion without result", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ success: true, result: [{ id: "api-preview-12" }] }),
+        ),
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true }))),
+  );
+  expect(await cleanup(12, credentials)).toMatchObject({
+    status: "cleaned",
+    outcome: "success",
+    results: [{ worker: "api-preview-12", status: "deleted" }],
+  });
 });

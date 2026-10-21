@@ -1,3 +1,4 @@
+import { commandFailure, errorDetail } from "./diagnostics.js";
 import {
   readdirSync,
   readFileSync,
@@ -59,7 +60,7 @@ export function collectTaskResults(
     return {
       ...base,
       status: "execution-error",
-      reason: "Task completion could not be confirmed",
+      reason: `Task completion could not be confirmed${match.execution?.error ? `: ${errorDetail(match.execution.error)}` : ""}`,
     };
   });
 }
@@ -96,14 +97,17 @@ export async function turboTask(
     task === "build" ? process.env : { ...process.env, TEST: "PACKAGE" },
   );
   let summary: unknown;
+  let summaryFailure: string | undefined;
   try {
     const files = readdirSync(directory).filter(
       (f) => f.endsWith(".json") && !before.has(f),
     );
     if (files.length === 1)
       summary = JSON.parse(readFileSync(resolve(directory, files[0]!), "utf8"));
-  } catch {
-    /* A missing summary is an execution error, never success. */
+    else
+      summaryFailure = `Expected one new Turbo summary, found ${files.length}`;
+  } catch (error) {
+    summaryFailure = `Cannot read Turbo summary: ${errorDetail(error)}`;
   }
   const reported = [...packages];
   if (task === "build") {
@@ -139,8 +143,15 @@ export async function turboTask(
       const first = results.find((r) => r.status === "passed");
       if (first) {
         first.status = "execution-error";
-        first.reason = "Turbo or a dependency failed; see execution log";
+        first.reason = "Turbo or a dependency failed";
       }
+    }
+  }
+  for (const result of results) {
+    if (result.status === "failed" || result.status === "execution-error") {
+      if (summaryFailure) result.reason += `; ${summaryFailure}`;
+      if (run.status !== "completed" || run.code !== 0)
+        result.reason += `; ${commandFailure(run, "Turbo")}`;
     }
   }
   for (const result of results)
@@ -163,13 +174,13 @@ export async function checks(
     try {
       mkdirSync(destination, { recursive: true });
       cpSync(source, destination, { recursive: true });
-    } catch {
+    } catch (error) {
       results.push({
         package: pkg.name,
         task: "ui_test:report",
         status: "execution-error",
         cached: false,
-        reason: "Cannot collect UI report",
+        reason: `Cannot collect UI report: ${errorDetail(error)}`,
       });
     }
   }
@@ -238,10 +249,7 @@ export async function deploy(
       results.push({
         package: pkg.name,
         status: "deploy-failed",
-        reason:
-          run.status === "completed"
-            ? `Wrangler exited ${run.code}`
-            : run.reason,
+        reason: commandFailure(run, "Wrangler"),
       });
     console.log(`[deploy] ${pkg.name}: ${results.at(-1)!.status}`);
   }

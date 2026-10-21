@@ -26,6 +26,7 @@ export async function runCleanup(
   console.log(
     `[cleanup] Result: ${result.status === "cleaned" ? result.outcome : result.status}; report: ${report.status}`,
   );
+  if (report.status === "report-failed") console.error(report.reason);
   return result.status === "cleaned" &&
     result.outcome === "success" &&
     report.status === "written"

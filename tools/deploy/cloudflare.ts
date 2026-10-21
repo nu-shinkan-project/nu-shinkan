@@ -1,3 +1,4 @@
+import { diagnostic, errorDetail } from "./diagnostics.js";
 export type ApiResponse =
   | {
       status: "received";
@@ -25,23 +26,41 @@ export async function api(
         signal: AbortSignal.timeout(30000),
       },
     );
-    if (!response.ok)
-      return {
-        status: "api-failed",
-        reason: `Cloudflare HTTP ${response.status}`,
-      };
-    const body = (await response.json()) as {
+    let body: {
       success?: boolean;
       result?: unknown;
+      errors?: { code?: unknown; message?: unknown }[];
       result_info?: { page?: number; per_page?: number; total_count?: number };
     };
-    if (body.success !== true || !Object.hasOwn(body, "result"))
-      return { status: "api-failed", reason: "Invalid Cloudflare response" };
+    try {
+      body = await response.json();
+    } catch (error) {
+      return {
+        status: "api-failed",
+        reason: `Cloudflare HTTP ${response.status}: response decoding failed: ${errorDetail(error, [credentials.token])}`,
+      };
+    }
+    if (!response.ok || body?.success !== true) {
+      const errors = Array.isArray(body?.errors)
+        ? body.errors
+            .filter((e) => e && typeof e.message === "string")
+            .map((e) => `${e.code ?? "unknown"}: ${e.message}`)
+            .join("; ")
+        : "";
+      return {
+        status: "api-failed",
+        reason: diagnostic(
+          `Cloudflare HTTP ${response.status}: ${errors || "Invalid Cloudflare response (success must be true)"}`,
+          [credentials.token],
+        ),
+      };
+    }
+    // DELETE may omit result; each listing validates its own data contract.
     return { status: "received", result: body.result, info: body.result_info };
-  } catch {
+  } catch (error) {
     return {
       status: "api-failed",
-      reason: "Cloudflare request or response decoding failed",
+      reason: `Cloudflare request failed: ${errorDetail(error, [credentials.token])}`,
     };
   }
 }

@@ -1,3 +1,4 @@
+import { errorDetail } from "./diagnostics.js";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import type { State, Check, Report } from "./types.js";
@@ -32,7 +33,7 @@ export function markdown(state: State): string {
   const p = planning.plan;
   if (p.source !== p.initialSource)
     lines.push(
-      `Final mode: ${request.purpose}/${p.source} (${p.fallback})`,
+      `Final mode: ${request.purpose}/${p.source} (${escape(p.fallback ?? "")})`,
       "",
     );
   for (const warning of p.warnings) lines.push(`Warning: ${escape(warning)}`);
@@ -99,10 +100,10 @@ export async function writeReport(
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, content);
     return { status: "written", path };
-  } catch {
+  } catch (error) {
     return {
       status: "report-failed",
-      reason: "Cannot write deployment report",
+      reason: `Cannot write deployment report: ${errorDetail(error)}`,
     };
   }
 }

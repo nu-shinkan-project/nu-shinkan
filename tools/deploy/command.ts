@@ -1,7 +1,8 @@
 import { spawn } from "node:child_process";
+import { diagnostic } from "./diagnostics.js";
 export type CommandResult =
-  | { status: "completed"; code: number; stdout: string }
-  | { status: "command-error"; reason: string; stdout: string };
+  | { status: "completed"; code: number; stdout: string; stderr: string }
+  | { status: "command-error"; reason: string; stdout: string; stderr: string };
 export async function command(
   program: string,
   args: string[],
@@ -13,27 +14,39 @@ export async function command(
     const child = spawn(program, args, {
       cwd,
       env,
-      stdio: ["ignore", "pipe", quiet ? "pipe" : "inherit"],
+      stdio: ["ignore", "pipe", "pipe"],
     });
     let stdout = "";
-    child.stderr?.resume();
+    let stderr = "";
+    child.stderr!.on("data", (data: Buffer) => {
+      stderr += data.toString();
+    });
     child.stdout!.on("data", (data: Buffer) => {
       stdout += data.toString();
-      if (!quiet) process.stdout.write(data);
     });
     child.on("error", (error) =>
-      resolve({ status: "command-error", reason: error.message, stdout }),
+      resolve({
+        status: "command-error",
+        reason: diagnostic(error.message, [], env),
+        stdout,
+        stderr,
+      }),
     );
-    child.on("close", (code) =>
+    child.on("close", (code, signal) => {
+      // Buffer before masking so secrets split across stream chunks remain hidden.
+      if (!quiet || code !== 0) {
+        process.stderr.write(diagnostic(stdout + stderr, [], env));
+      }
       resolve(
         code === null
           ? {
               status: "command-error",
-              reason: "Process terminated without an exit code",
+              reason: `Process terminated by ${signal ?? "unknown signal"}`,
               stdout,
+              stderr,
             }
-          : { status: "completed", code, stdout },
-      ),
-    );
+          : { status: "completed", code, stdout, stderr },
+      );
+    });
   });
 }

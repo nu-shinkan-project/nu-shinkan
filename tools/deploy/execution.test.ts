@@ -35,7 +35,12 @@ it("continues checks after failure and keeps results for every affected package"
       join(root, ".turbo/runs", `${++index}.json`),
       JSON.stringify({ tasks }),
     );
-    return { status: "completed", code: task === "test" ? 1 : 0, stdout: "" };
+    return {
+      status: "completed",
+      code: task === "test" ? 1 : 0,
+      stdout: "",
+      stderr: "",
+    };
   });
   const result = await checks(root, packages);
   expect(result.status).toBe("checks-failed");
@@ -64,6 +69,9 @@ it("deploys serially in planned order and continues after failure", async () => 
       status: "completed",
       code: path.endsWith("/api") ? 1 : 0,
       stdout: "https://web-preview-1.example.workers.dev",
+      stderr: path.endsWith("/api")
+        ? "Service Binding target missing: backend-preview-1"
+        : "",
     };
   });
   const result = await deploy("/repo", [
@@ -72,7 +80,13 @@ it("deploys serially in planned order and continues after failure", async () => 
   ]);
   expect(result.status).toBe("partial-failure");
   expect(result.results).toMatchObject([
-    { package: "api", status: "deploy-failed" },
+    {
+      package: "api",
+      status: "deploy-failed",
+      reason: expect.stringContaining(
+        "Service Binding target missing: backend-preview-1",
+      ),
+    },
     {
       package: "web",
       status: "deployed",
