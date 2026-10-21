@@ -8,20 +8,17 @@
   },
   "scripts": {
     "dev": "wrangler dev --host 0.0.0.0 --port 6174 --inspector-port 9230",
-    "deploy": "wrangler deploy --config wrangler.deploy.jsonc --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "check-types": "tsc --noEmit",
     "lint": "eslint .",
     "build": "tsc --noEmit && WRANGLER_LOG=error wrangler deploy --dry-run --outdir dist",
-    "sync:local": "sync-local",
-    "undeploy:preview": "delete-preview-worker"
+    "sync:local": "sync-local"
   },
   "dependencies": {
     "hono": "^4.13.5"
   },
   "devDependencies": {
     "@repo/app-config": "workspace:*",
-    "@repo/deployment-scripts": "workspace:*",
     "@cloudflare/workers-types": "^5.20260902.1",
     "@eslint/js": "^10.0.1",
     "eslint": "^10.9.0",

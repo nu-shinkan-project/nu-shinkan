@@ -12,7 +12,6 @@
     "compile": "pnpm lint && pnpm test --run && pnpm build"
   },
   "bin": {
-    "app-build": "./bin/build.js",
     "sync-local": "./bin/sync-local.js"
   },
   "devDependencies": {
