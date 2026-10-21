@@ -13,8 +13,7 @@
     "ui_test:prepare": "playwright install --with-deps",
     "ui_test:report": "playwright show-report --host 0.0.0.0",
     "build": "tsc -b && vite build",
-    "sync:local": "sync-local",
-    "undeploy:preview": "delete-preview-worker"
+    "sync:local": "sync-local"
   },
   "dependencies": {
     "@tanstack/react-router": "^1.170.32",
