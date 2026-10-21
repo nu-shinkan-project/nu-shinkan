@@ -1,0 +1,79 @@
+export type Channel = "preview" | "staging" | "release";
+export type Source = "diff" | "full" | "manual-pick";
+export type Request = {
+  channel: Channel;
+  purpose: "update" | "review";
+  profile: "staging" | "release";
+  source: Source;
+  commit: string;
+  base: string | null;
+  packages: string[];
+  prNumber: number;
+};
+export type Package = {
+  name: string;
+  path: string;
+  scripts: Record<string, string>;
+};
+export type Plan = {
+  initialSource: Source;
+  source: Source;
+  fallback?: string;
+  origins: string[];
+  affected: string[];
+  targets: string[];
+  builds: string[];
+  deploys: string[];
+  warnings: string[];
+};
+export type Planning =
+  | { status: "planned"; plan: Plan }
+  | {
+      status: "invalid" | "unavailable";
+      reason: string;
+      unknownPackages: string[];
+    };
+export type Sync =
+  { status: "synced" } | { status: "sync-failed"; reason: string };
+export type Check = {
+  package: string;
+  task: string;
+  status: "passed" | "failed" | "execution-error" | "no-script";
+  cached: boolean;
+  reason?: string;
+};
+export type Checks = { status: "passed" | "checks-failed"; results: Check[] };
+export type Configuration =
+  | { status: "generated" }
+  | {
+      status: "configuration-failed";
+      reason: string;
+      package?: string;
+      resource?: { kind: string; name: string };
+    };
+export type Builds = { status: "built" | "build-failed"; results: Check[] };
+export type Deployment = {
+  package: string;
+  status: "deployed" | "deploy-failed";
+  url?: string;
+  reason?: string;
+};
+export type Deployments = {
+  status: "success" | "partial-failure" | "failure";
+  results: Deployment[];
+};
+export type State = {
+  request: Request;
+  planning: Planning;
+  sync?: Sync;
+  checks?: Checks;
+  configuration?: Configuration;
+  builds?: Builds;
+  deployments?: Deployments;
+  status: "success" | "partial-failure" | "failure";
+  stopped?: { phase: string; reason: string };
+};
+export type Report =
+  | { status: "written"; path: string }
+  | { status: "report-failed"; reason: string };
+export type Outcome = { state: State; report: Report; exitCode: number };
