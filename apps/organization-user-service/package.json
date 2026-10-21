@@ -12,7 +12,7 @@
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "check-types": "tsc --noEmit",
     "lint": "eslint .",
-    "build": "app-build",
+    "build": "tsc --noEmit && WRANGLER_LOG=error wrangler deploy --dry-run --outdir dist",
     "sync:local": "sync-local",
     "undeploy:preview": "delete-preview-worker"
   },

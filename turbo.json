@@ -1,6 +1,17 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
+  "globalDependencies": [
+    "apps/**/src/**",
+    "packages/**/src/**",
+    "packages/**/package.json",
+    "packages/typescript-config/*.json",
+    "packages/eslint-config/*.js",
+    "apps/**/wrangler.jsonc",
+    "apps/**/.env.development",
+    "packages/app-config/globalRuntimeEnvs.yaml"
+  ],
+  "globalEnv": ["CI", "TEST", "NODE_ENV", "VITE_*"],
   "tasks": {
     "bootstrap": {
       "dependsOn": ["^bootstrap"]
@@ -22,6 +33,7 @@
       "dependsOn": ["^test"]
     },
     "ui_test": {
+      "outputs": ["playwright-report/**", "test-results/**"],
       "dependsOn": ["^ui_test"]
     },
     "ui_test:prepare": {
@@ -35,8 +47,8 @@
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/packages/app-config/globalRuntimeEnvs.yaml"
       ],
-      "outputs": ["wrangler.deploy.jsonc", ".env.deploy", "dist/**"],
-      "env": ["DEPLOY_CHANNEL", "PR_NUMBER", "TARGETS"]
+      "outputs": ["dist/**", "bin/**"],
+      "env": ["NODE_ENV", "VITE_*"]
     },
     "deploy": {
       "cache": false,
@@ -51,6 +63,6 @@
     "undeploy:preview": {
       "cache": false,
       "env": ["PR_NUMBER", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]
-    },
+    }
   }
 }

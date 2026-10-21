@@ -11,7 +11,7 @@
     "preview": "vite preview --mode development",
     "resolve-deps": "playwright install --with-deps",
     "ui_test:report": "playwright show-report --host 0.0.0.0",
-    "build": "app-build",
+    "build": "tsc -b && vite build",
     "sync:local": "sync-local",
     "undeploy:preview": "delete-preview-worker"
   },
