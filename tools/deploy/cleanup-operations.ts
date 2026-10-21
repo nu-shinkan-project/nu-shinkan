@@ -90,7 +90,7 @@ export function cleanupMarkdown(result: Cleanup, prNumber: number): string {
       lines.push("| Worker | Result | Detail |", "| --- | --- | --- |");
       for (const removal of result.results)
         lines.push(
-          `| ${removal.worker} | ${removal.status} | ${removal.reason ?? ""} |`,
+          `| ${removal.worker.replace(/[|\r\n]/g, " ")} | ${removal.status} | ${(removal.reason ?? "").replace(/[|\r\n]/g, " ")} |`,
         );
     }
   }
