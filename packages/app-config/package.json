@@ -27,10 +27,8 @@
   "exports": {
     "./deployment": "./bin/config-file/deployment.yaml.js",
     "./wrangler": "./bin/config-file/wrangler.jsonc.js",
-    "./context": "./bin/materialize/context.js",
     "./global": "./bin/config-file/globalRuntimeEnvs.yaml.js",
     "./dotenv": "./bin/config-file/dotenv.js",
-    "./materialize": "./bin/materialize/generate.js",
     "./settings": "./bin/config-file/settings.js"
   }
 }

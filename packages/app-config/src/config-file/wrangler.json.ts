@@ -51,16 +51,20 @@ export class WranglerJson {
       }
     }
     // Match JSONC's binding updates, preserving order and existing attributes.
-    const pending = new Map(
-      (services ?? []).map(({ binding, service }) => [binding, service]),
+    const pending = (services ?? []).reduce(
+      (entries, { binding, service }) => {
+        entries[binding] = service;
+        return entries;
+      },
+      {} as Record<string, string>,
     );
     for (const binding of this.config.services ?? []) {
-      if (pending.has(binding.binding)) {
-        binding.service = pending.get(binding.binding)!;
-        pending.delete(binding.binding);
+      if (Object.hasOwn(pending, binding.binding)) {
+        binding.service = pending[binding.binding]!;
+        delete pending[binding.binding];
       }
     }
-    for (const [binding, service] of pending) {
+    for (const [binding, service] of Object.entries(pending)) {
       (this.config.services ??= []).push({ binding, service });
     }
     for (const [key, value] of Object.entries(rest)) {
@@ -104,13 +108,6 @@ function validateResources(config: WranglerConfig): void {
             `${field}[${index}].${key} must be a non-empty string`,
           );
         }
-      }
-      if (
-        field === "d1_databases" &&
-        entry.database_id !== undefined &&
-        typeof entry.database_id !== "string"
-      ) {
-        throw new Error(`${field}[${index}].database_id must be a string`);
       }
     }
   }

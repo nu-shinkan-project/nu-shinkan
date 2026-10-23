@@ -13,12 +13,10 @@ export type DotenvVariables = { [key: string]: string };
  */
 export class Dotenv {
   private src: string;
-  private readonly gen: string;
   private content?: string;
 
   constructor(packagePath: string = cwd()) {
     this.src = resolve(packagePath, ".env.development");
-    this.gen = resolve(packagePath, ".env.production");
   }
 
   exists(): boolean {
@@ -78,28 +76,6 @@ export class Dotenv {
       mkdirSync(dirname(this.src), { recursive: true });
       writeFileSync(this.src, this.document, "utf-8");
     }
-  }
-
-  /** 編集中の内容を元ファイルに保存する。 */
-  rewriteOriginal(dryRun: boolean = false): void {
-    if (dryRun) {
-      console.log(`[dry-run] would save .env.development:\n${this.document}`);
-    } else {
-      writeFileSync(this.src, this.document, "utf-8");
-    }
-  }
-
-  /** 現在の環境変数をデプロイ用の形式で保存する。 */
-  genDeployment(): void {
-    mkdirSync(dirname(this.gen), { recursive: true });
-    const content = Object.entries(this.variables)
-      .map(([key, value]) => {
-        // Native values may already be quoted; preserve their dotenv syntax.
-        const quoted = /^("|')[\s\S]*\1$/.test(value);
-        return `VITE_${key}=${quoted ? value : JSON.stringify(value)}`;
-      })
-      .join("\n");
-    writeFileSync(this.gen, content, "utf-8");
   }
 }
 
