@@ -1,4 +1,4 @@
-import { diagnostic, errorDetail } from "./diagnostics.js";
+import { diagnostic, errorDetail } from "../diagnostics.js";
 export type ApiResponse =
   | {
       status: "received";

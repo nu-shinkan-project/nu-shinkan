@@ -1,4 +1,4 @@
-import { errorDetail } from "./diagnostics.js";
+import { errorDetail } from "../diagnostics.js";
 import { run } from "./run.js";
 try {
   process.exitCode = await run("manual-pick", process.argv.slice(2));

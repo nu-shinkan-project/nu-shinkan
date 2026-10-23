@@ -1,4 +1,4 @@
-import { errorDetail } from "./diagnostics.js";
+import { errorDetail } from "../diagnostics.js";
 import { runCleanup } from "./run-cleanup.js";
 try {
   process.exitCode = await runCleanup(process.argv.slice(2), process.env);

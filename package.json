@@ -12,7 +12,8 @@
     "sync": "tsx tools/sync-env/sync.ts",
     "make:backend": "tsx tools/make-app/make-backend-app.ts",
     "make:frontend": "tsx tools/make-app/make-frontend-app.ts",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "checking": "tsx tools/checking/cli.ts"
   },
   "devDependencies": {
     "@types/node": "26.3.0",
