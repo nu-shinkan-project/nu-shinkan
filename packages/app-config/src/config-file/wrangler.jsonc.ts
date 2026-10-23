@@ -7,20 +7,15 @@ import {
 } from "jsonc-parser";
 import { dirname, resolve } from "node:path";
 
-export type WranglerConfig = {
-  name: string;
-  vars?: Record<string, string>;
-  env?: Record<string, Partial<WranglerConfig>>;
-  services?: { binding: string; service: string }[];
-  [key: string]: unknown;
-};
-
-type WranglerPatch = Partial<
-  Pick<WranglerConfig, "name" | "env" | "services">
-> & {
-  vars?: Record<string, string | null>;
-  [key: string]: unknown;
-};
+import type { WranglerConfig, WranglerPatch } from "./wrangler-types.js";
+import { WranglerJson } from "./wrangler.json.js";
+export { WranglerJson } from "./wrangler.json.js";
+export type {
+  WranglerConfig,
+  WranglerPatch,
+  D1Database,
+  R2Bucket,
+} from "./wrangler-types.js";
 
 // Main Logic
 
@@ -66,6 +61,18 @@ export class WranglerJsonc {
 
   update(values: WranglerPatch): void {
     this.content = patch(this.document, values);
+  }
+
+  derive(path: string): WranglerJson {
+    return new WranglerJson(resolve(dirname(this.src), path), this.data);
+  }
+
+  save(dryRun = false): void {
+    if (dryRun) {
+      console.log(`[dry-run] would save ${this.src}:\n${this.document}`);
+    } else {
+      writeFileSync(this.src, this.document, "utf-8");
+    }
   }
 
   useProfile(profile: "staging" | "release"): void {

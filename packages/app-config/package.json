@@ -30,6 +30,7 @@
     "./context": "./bin/materialize/context.js",
     "./global": "./bin/config-file/globalRuntimeEnvs.yaml.js",
     "./dotenv": "./bin/config-file/dotenv.js",
-    "./materialize": "./bin/materialize/generate.js"
+    "./materialize": "./bin/materialize/generate.js",
+    "./settings": "./bin/config-file/settings.js"
   }
 }
