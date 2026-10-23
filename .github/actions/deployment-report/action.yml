@@ -1,0 +1,33 @@
+name: デプロイレポートの掲載
+description: CLIのMarkdownレポートまたは失敗ステップをGitHubへ掲載します。
+inputs:
+  channel:
+    required: true
+    description: 通知先を決めるchannel
+  entry:
+    required: true
+    description: 実行入口
+  pr:
+    default: ""
+    description: コメント先PR番号
+  steps:
+    required: true
+    description: ステップの結果を表すJSON
+  ui-url:
+    default: ""
+    description: UIレポートのartifact URL
+runs:
+  using: composite
+  steps:
+    - uses: actions/github-script@v9
+      env:
+        REPORT_ACTION_PATH: ${{ github.action_path }}
+        REPORT_CHANNEL: ${{ inputs.channel }}
+        REPORT_ENTRY: ${{ inputs.entry }}
+        REPORT_PR: ${{ inputs.pr }}
+        REPORT_STEPS: ${{ inputs.steps }}
+        REPORT_UI_URL: ${{ inputs.ui-url }}
+      with:
+        script: |
+          const { publish } = await import(`${process.env.REPORT_ACTION_PATH}/report.mjs`);
+          await publish({ github, context, core });

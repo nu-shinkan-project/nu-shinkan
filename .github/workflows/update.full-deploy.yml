@@ -1,55 +1,45 @@
 name: Full Deploy
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
-      head_sha:
-        description: デプロイ対象コミットのハッシュ値
-        type: string
-        required: true
       channel:
-        description: staging または release
-        type: string
+        description: タグを移動せず全件反映する環境
+        type: choice
+        options: [staging, release]
         required: true
 permissions:
   contents: read
-concurrency:
-  group: deploy-channel-${{ inputs.channel }}
-  queue: max
-  cancel-in-progress: false
-env:
-  HEAD_SHA: ${{ inputs.head_sha }}
-  CHANNEL: ${{ inputs.channel }}
 jobs:
-  validate-inputs:
+  receive:
     runs-on: ubuntu-latest
+    outputs:
+      commit: ${{ steps.request.outputs.commit }}
     steps:
-      - name: 入力値の検証
+      - name: 受付時のタグをcommit SHAに固定
+        id: request
+        uses: actions/github-script@v9
         env:
-          CHANNEL: ${{ env.CHANNEL }}
-        run: '[[ "$CHANNEL" == staging || "$CHANNEL" == release ]]'
+          CHANNEL: ${{ inputs.channel }}
+        with:
+          script: |
+            const channel = process.env.CHANNEL;
+            if (!['staging','release'].includes(channel)) throw Error('Invalid channel');
+            const {data} = await github.rest.repos.getCommit({...context.repo, ref:`refs/tags/${channel}`});
+            if (!/^[a-f0-9]{40}$/.test(data.sha)) throw Error('Invalid resolved commit');
+            core.setOutput('commit', data.sha);
+            core.info(`[receive] Full ${channel}: fixed commit=${data.sha}; tag remains unchanged.`);
+      - name: 受付失敗の通知
+        if: ${{ always() && steps.request.outcome != 'success' }}
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const url = `${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await core.summary.addRaw(`Full deployment request failed before checkout. No CLI report is available. Check the tag and permissions, then rerun Full Deploy. [Run logs](${url})`).write();
   full-deploy:
-    needs: validate-inputs
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.channel }}
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ env.HEAD_SHA }}
-          persist-credentials: false
-      - uses: ./.github/actions/use-repo
-        with:
-          context: ${{ env.CHANNEL }}
-      - parallel:
-        - id: unit-tests
-          uses: ./.github/actions/vi-test
-        - id: ui-tests
-          uses: ./.github/actions/ui-test
-        - id: lint
-          uses: ./.github/actions/lint
-      - name: デプロイの実行
-        uses: ./.github/actions/deploy
-        with:
-          channel: ${{ env.CHANNEL }}
+    needs: receive
+    uses: ./.github/workflows/deploy.run.yml
+    secrets: inherit
+    with:
+      entry: full
+      channel: ${{ inputs.channel }}
+      commit: ${{ needs.receive.outputs.commit }}

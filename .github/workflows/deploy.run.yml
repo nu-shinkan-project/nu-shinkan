@@ -1,0 +1,107 @@
+name: Deploy Fixed Commit
+on:
+  workflow_call:
+    inputs:
+      entry:
+        type: string
+        required: true
+      channel:
+        type: string
+        required: true
+      commit:
+        type: string
+        required: true
+      base:
+        type: string
+        default: ""
+      pr:
+        type: string
+        default: ""
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.channel }}
+    concurrency:
+      group: ${{ inputs.channel == 'preview' && format('preview-pr-{0}', inputs.pr) || format('deploy-channel-{0}', inputs.channel) }}
+      queue: ${{ inputs.channel == 'preview' && 'single' || 'max' }}
+      cancel-in-progress: false
+    steps:
+      - name: 固定SHAのcheckout
+        id: checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 実行環境の準備
+        id: setup
+        uses: ./.github/actions/use-repo
+        with:
+          context: ${{ inputs.channel == 'preview' && format('preview-{0}', inputs.pr) || inputs.channel }}
+          cache: ${{ inputs.entry != 'manual-pick' && inputs.entry != 'cleanup' }}
+      - name: UIテスト環境の準備
+        id: browsers
+        if: inputs.entry != 'cleanup'
+        run: |
+          echo '[workflow] Preparing registered UI-test environments serially.'
+          pnpm ui_test:prepare --only --concurrency=1
+      - name: コメント入力の検証
+        id: command
+        if: inputs.entry == 'manual-pick'
+        uses: ./.github/actions/parse-preview-command
+      - name: デプロイ要求の実行
+        id: execute
+        uses: ./.github/actions/run-deployment
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        with:
+          entry: ${{ inputs.entry }}
+          channel: ${{ inputs.channel }}
+          commit: ${{ inputs.commit }}
+          base: ${{ inputs.base }}
+          pr: ${{ inputs.pr }}
+          picked: ${{ steps.command.outputs.picked || '[]' }}
+      - name: 成功したタスクのキャッシュ保存
+        id: cache
+        if: ${{ always() && steps.setup.outcome == 'success' && inputs.entry != 'manual-pick' && inputs.entry != 'cleanup' }}
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: .turbo/cache
+          key: ${{ steps.setup.outputs.cache-key }}
+      - name: UIレポートの保存
+        id: ui
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-test-reports-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/ui_test-reports/
+          if-no-files-found: ignore
+      - name: 実行結果の通知
+        if: ${{ always() && steps.checkout.outcome == 'success' }}
+        uses: ./.github/actions/deployment-report
+        with:
+          channel: ${{ inputs.channel }}
+          entry: ${{ inputs.entry }}
+          pr: ${{ inputs.pr }}
+          steps: ${{ toJSON(steps) }}
+          ui-url: ${{ steps.ui.outputs.artifact-url }}
+      - name: checkout失敗の通知
+        if: ${{ always() && steps.checkout.outcome != 'success' }}
+        uses: actions/github-script@v9
+        env:
+          CHANNEL: ${{ inputs.channel }}
+          PR_NUMBER: ${{ inputs.pr }}
+        with:
+          script: |
+            const url = `${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            let body = `Deployment checkout failed; report unavailable. [Run logs](${url})`;
+            if (process.env.CHANNEL === 'preview') {
+              const number = Number(process.env.PR_NUMBER);
+              if (!Number.isSafeInteger(number) || number <= 0) throw Error('Invalid PR number');
+              await github.rest.issues.createComment({...context.repo, issue_number:number, body});
+            } else {
+              body += '\nRecovery: run Full Deploy (update.full-deploy.yml) for the affected channel without moving its tag.';
+              await core.summary.addRaw(body).write();
+            }

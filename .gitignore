@@ -41,7 +41,7 @@ yarn-error.log*
 
 # Deployment artifacts
 wrangler.deploy.jsonc
-.env.deploy
+.env.production
 
 # Local workspace
 .agents/handoff/

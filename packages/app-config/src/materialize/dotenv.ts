@@ -3,8 +3,12 @@ import { resolvePreviewVariables } from "./connections.js";
 import type { Settings } from "./settings.js";
 import type { Context } from "./context.js";
 
-export function generateDotenv(settings: Settings, context: Context): void {
-  const dotenv = new Dotenv();
+export function generateDotenv(
+  settings: Settings,
+  context: Context,
+  packagePath?: string,
+): void {
+  const dotenv = new Dotenv(packagePath);
   if (!dotenv.exists()) return;
   dotenv.updateVariables(
     resolvePreviewVariables(

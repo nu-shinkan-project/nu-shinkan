@@ -36,4 +36,4 @@ dist-ssr
 
 # Deployment artifacts
 wrangler.deploy.jsonc
-.env.deploy
+.env.production

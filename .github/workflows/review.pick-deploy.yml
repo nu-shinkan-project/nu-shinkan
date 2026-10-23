@@ -31,6 +31,8 @@ jobs:
               core.info('Preview requires a PR from this repository');
               return;
             }
+            if (pr.state !== 'open') { core.info('[receive] PR is closed; request rejected.'); return; }
+            core.info(`[receive] Preview PR ${pr.number}: fixed commit=${pr.head.sha}`);
             core.setOutput('accepted','true');
             core.setOutput('head_sha',pr.head.sha);
             core.setOutput('base_sha',pr.base.sha);
@@ -38,51 +40,10 @@ jobs:
   pick-deploy:
     needs: receive_command
     if: ${{ needs.receive_command.outputs.accepted == 'true' }}
-    runs-on: ubuntu-latest
-    environment: preview
-    concurrency:
-      group: preview-pr-${{ github.event.issue.number }}
-      queue: single
-      cancel-in-progress: false
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      PR_NUMBER: ${{ needs.receive_command.outputs.pr_number }}
-      HEAD_SHA: ${{ needs.receive_command.outputs.head_sha }}
-      BASE_SHA: ${{ needs.receive_command.outputs.base_sha }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ env.HEAD_SHA }}
-          persist-credentials: false
-      - uses: ./.github/actions/use-repo
-        with:
-          context: preview-${{ env.PR_NUMBER }}
-      - id: cmd
-        uses: ./.github/actions/parse-preview-command
-      - parallel:
-          - uses: ./.github/actions/ui-test
-            with:
-              filter: ${{ steps.cmd.outputs.picked }}
-          - uses: ./.github/actions/vi-test
-            with:
-              filter: ${{ steps.cmd.outputs.picked }}
-          - uses: ./.github/actions/lint
-            with:
-              filter: ${{ steps.cmd.outputs.picked }}
-      - id: preview
-        uses: ./.github/actions/preview-deploy
-        with:
-          picked: ${{ steps.cmd.outputs.picked }}
-          head_sha: ${{ env.HEAD_SHA }}
-          pr_number: ${{ env.PR_NUMBER }}
-
-      - name: プレビュー準備失敗の通知
-        if: ${{ failure() && steps.preview.outcome == 'skipped' }}
-        uses: ./.github/actions/comment-result
-        with:
-          pr_number: ${{ env.PR_NUMBER }}
-          marker: preview-preparation-failure
-          title: Preview Preparation Failure
-          status: failure
-          body: Preview preparation failed. Check the workflow run logs for details.
+    uses: ./.github/workflows/deploy.run.yml
+    secrets: inherit
+    with:
+      entry: manual-pick
+      channel: preview
+      commit: ${{ needs.receive_command.outputs.head_sha }}
+      pr: ${{ needs.receive_command.outputs.pr_number }}

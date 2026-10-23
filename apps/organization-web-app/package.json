@@ -5,15 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5174 --mode development",
-    "deploy": "wrangler deploy --config wrangler.deploy.jsonc --minify",
     "check-types": "tsc --noEmit",
     "lint": "eslint .",
     "preview": "vite preview --mode development",
     "resolve-deps": "playwright install --with-deps",
     "ui_test:report": "playwright show-report --host 0.0.0.0",
-    "build": "app-build",
-    "sync:local": "sync-local",
-    "undeploy:preview": "delete-preview-worker"
+    "build": "tsc -b && vite build",
+    "sync:local": "sync-local"
   },
   "dependencies": {
     "@repo/organization-user-service": "workspace:*",
@@ -24,7 +22,6 @@
   },
   "devDependencies": {
     "@repo/app-config": "workspace:*",
-    "@repo/deployment-scripts": "workspace:*",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
     "@tanstack/router-plugin": "^1.168.35",

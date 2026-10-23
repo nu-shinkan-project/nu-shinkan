@@ -12,7 +12,6 @@
     "compile": "pnpm lint && pnpm test --run && pnpm build"
   },
   "bin": {
-    "app-build": "./bin/build.js",
     "sync-local": "./bin/sync-local.js"
   },
   "devDependencies": {
@@ -30,6 +29,7 @@
     "./wrangler": "./bin/config-file/wrangler.jsonc.js",
     "./context": "./bin/materialize/context.js",
     "./global": "./bin/config-file/globalRuntimeEnvs.yaml.js",
-    "./dotenv": "./bin/config-file/dotenv.js"
+    "./dotenv": "./bin/config-file/dotenv.js",
+    "./materialize": "./bin/materialize/generate.js"
   }
 }

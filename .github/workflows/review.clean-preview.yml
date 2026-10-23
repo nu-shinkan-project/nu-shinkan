@@ -6,70 +6,40 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: プレビューリソースを削除するプルリクエスト番号
+        description: プレビューWorkerを削除するPR番号
         required: true
         type: string
 permissions:
   contents: read
   pull-requests: write
-concurrency:
-  group: preview-pr-${{ inputs.pr_number || github.event.pull_request.number }}
-  queue: single
-  cancel-in-progress: false
-env:
-  PR_NUMBER: ${{ inputs.pr_number || github.event.pull_request.number }}
-  MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
 jobs:
-  cleanup:
+  receive:
     runs-on: ubuntu-latest
-    environment: preview
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    outputs:
+      pr: ${{ steps.request.outputs.pr }}
+      commit: ${{ steps.request.outputs.commit }}
     steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.repository.default_branch }}
-          persist-credentials: false
-
-      - uses: ./.github/actions/use-repo
-        with:
-          context: preview-${{ env.PR_NUMBER }}
-
-      - name: 現在のPR状態の確認
-        id: state
+      - name: 受付時の入力確認
+        id: request
         uses: actions/github-script@v9
         env:
-          PR_NUMBER: ${{ env.PR_NUMBER }}
-          MANUAL: ${{ env.MANUAL }}
+          PR_NUMBER: ${{ inputs.pr_number || github.event.pull_request.number }}
         with:
           script: |
             const number = Number(process.env.PR_NUMBER);
             if (!Number.isSafeInteger(number) || number <= 0) throw Error('Invalid PR number');
-            const {data:pr} = await github.rest.pulls.get({...context.repo, pull_number:number});
-            if (!pr) throw Error('PR not found');
-            const { shouldCleanup } = await import(`${process.env.GITHUB_WORKSPACE}/.github/actions/preview-deploy/pr.mjs`);
-            const cleanup = shouldCleanup(pr, process.env.MANUAL === 'true');
-            core.setOutput('cleanup', String(cleanup));
-            if (!cleanup) core.info('PR reopened; cleanup is a no-op.');
-          
-      - name: PR Workersの削除
-        if: ${{ steps.state.outputs.cleanup == 'true' }}
-        shell: bash
-        env:
-          HUSKY: 0
-          PR_NUMBER: ${{ env.PR_NUMBER }}
-        run: | 
-          pnpm install --frozen-lockfile --prefer-offline
-          pnpm exec turbo run undeploy:preview --continue=always
-    
-      - name: クリーンアップ失敗時のコメント投稿
-        if: ${{ failure() && env.PR_NUMBER }}
-        uses: ./.github/actions/comment-result
-        with:
-          pr_number: ${{ env.PR_NUMBER }}
-          marker: cleanup-failure
-          title: Cleanup Failure
-          status: failure
-          body: |
-            Cleanup of preview resources failed during workflow execution. Please check the workflow run logs for detailed failure traces.
+            // Existence is checked at reception; state is not rechecked before deletion.
+            if (context.eventName === 'workflow_dispatch') await github.rest.pulls.get({...context.repo,pull_number:number});
+            const {data} = await github.rest.repos.getCommit({...context.repo,ref:context.payload.repository.default_branch});
+            core.setOutput('pr', String(number));
+            core.setOutput('commit', data.sha);
+            core.info(`[receive] Cleanup PR ${number}; default-branch commit=${data.sha}`);
+  cleanup:
+    needs: receive
+    uses: ./.github/workflows/deploy.run.yml
+    secrets: inherit
+    with:
+      entry: cleanup
+      channel: preview
+      commit: ${{ needs.receive.outputs.commit }}
+      pr: ${{ needs.receive.outputs.pr }}

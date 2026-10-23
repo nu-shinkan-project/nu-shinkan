@@ -34,4 +34,4 @@ lerna-debug.log*
 
 # Deployment artifacts
 wrangler.deploy.jsonc
-.env.deploy
+.env.production

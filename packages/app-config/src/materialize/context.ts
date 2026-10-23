@@ -5,6 +5,7 @@ export type Context = {
   prNumber: number;
   targets: ReadonlyMap<string, Target>;
   profile: "staging" | "release";
+  workers?: ReadonlyMap<string, string>;
 };
 
 // Main Logic

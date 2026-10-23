@@ -23,12 +23,12 @@ it("preserves URL path/query and leaves connections outside targets unchanged", 
     }),
   );
   expect(result.API).toBe(
-    "https://api-preview-pr-8.nushinkan2.workers.dev/api/v1/?x=1",
+    "https://api-preview-8.nushinkan2.workers.dev/api/v1/?x=1",
   );
   expect(result.OTHER).toBe("https://other-staging.example/");
 });
-it("rejects a selected URL connection without a base URL", () =>
-  expect(() =>
+it("falls back to workers.dev without a configured URL", () =>
+  expect(
     resolvePreviewVariables(
       {},
       {
@@ -45,4 +45,4 @@ it("rejects a selected URL connection without a base URL", () =>
         ]),
       }),
     ),
-  ).toThrow("Missing base URL"));
+  ).toMatchObject({ API: "https://api-preview-8.nushinkan2.workers.dev/" }));
