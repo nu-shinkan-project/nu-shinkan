@@ -12,7 +12,7 @@ export type DotenvVariables = { [key: string]: string };
  * 編集はメモリ上で行い、保存メソッドを呼ぶまでファイルには反映しない。
  */
 export class Dotenv {
-  private readonly src: string;
+  private src: string;
   private readonly gen: string;
   private content?: string;
 
@@ -57,6 +57,27 @@ export class Dotenv {
       ]),
     );
     this.content = patch(this.document, prefixed);
+  }
+
+  derive(path: string): Dotenv {
+    const derived = new Dotenv(dirname(this.src));
+    derived.src = resolve(dirname(this.src), path);
+    derived.content = Object.entries(this.variables)
+      .map(([key, value]) => {
+        const quoted = /^("|')[\s\S]*\1$/.test(value);
+        return `VITE_${key}=${quoted ? value : JSON.stringify(value)}`;
+      })
+      .join("\n");
+    return derived;
+  }
+
+  save(dryRun = false): void {
+    if (dryRun) {
+      console.log(`[dry-run] would save ${this.src}:\n${this.document}`);
+    } else {
+      mkdirSync(dirname(this.src), { recursive: true });
+      writeFileSync(this.src, this.document, "utf-8");
+    }
   }
 
   /** 編集中の内容を元ファイルに保存する。 */
