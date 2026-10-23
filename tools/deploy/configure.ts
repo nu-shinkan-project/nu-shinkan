@@ -1,9 +1,15 @@
 import { errorDetail } from "../diagnostics.js";
-import { generate } from "@repo/app-config/materialize";
-import { getWorkspaceConfigurations } from "../workspace/configs.js";
+import { DeploymentSettings } from "@repo/app-config/settings";
+import { Dotenv } from "@repo/app-config/dotenv";
+import type { WranglerJson } from "@repo/app-config/wrangler";
+import {
+  getWorkspaceConfigurations,
+  type WorkspaceConfiguration,
+} from "../workspace/configs.js";
 import { listDatabases, matchDatabase, type Cloudflare } from "./cloudflare.js";
+import { buildWorkerName } from "./worker-name.js";
+import { resolveVariables, resolveServiceBindings } from "./connections.js";
 import type { Configuration, Plan, Request } from "./types.js";
-import type { Database } from "@repo/app-config/materialize";
 
 export async function configure(
   root: string,
@@ -12,53 +18,35 @@ export async function configure(
   credentials: Cloudflare,
 ): Promise<Configuration> {
   const configs = getWorkspaceConfigurations(root);
-  const targets = new Map(
-    configs
-      .filter((p) => plan.targets.includes(p.packageName))
-      .map((p) => [
-        p.packageName,
-        { path: p.pathRel, workerName: p.wrangler?.name },
-      ]),
-  );
+  const targets = new Set(plan.targets);
   const workers = new Map(
     configs
       .filter((p) => p.wrangler)
       .map((p) => [p.packageName, p.wrangler!.name]),
   );
-  const context = {
-    channel: request.channel,
-    profile: request.profile,
-    prNumber: request.prNumber,
-    targets,
-    workers,
-  };
+  const prepared: {
+    source: WorkspaceConfiguration;
+    wrangler?: WranglerJson;
+  }[] = [];
   const required: { package: string; name: string }[] = [];
-  for (const p of configs.filter((p) => targets.has(p.packageName))) {
-    if (!p.wrangler) continue;
-    const config = p.wrangler.data;
-    const databases =
-      config.env?.[request.profile]?.d1_databases ?? config.d1_databases ?? [];
-    if (!Array.isArray(databases))
+  for (const source of configs.filter((p) => targets.has(p.packageName))) {
+    try {
+      const wrangler = source.wrangler?.derive("wrangler.deploy.jsonc");
+      wrangler?.flattenEnv(request.profile);
+      // Validate all selected resources before requesting IDs or writing files.
+      for (const database of wrangler?.data.d1_databases ?? []) {
+        required.push({
+          package: source.packageName,
+          name: `${database.database_name}-${request.profile}`,
+        });
+      }
+      prepared.push({ source, wrangler });
+    } catch (error) {
       return {
         status: "configuration-failed",
-        package: p.packageName,
-        reason: "Invalid D1 configuration",
+        package: source.packageName,
+        reason: `Invalid deployment configuration: ${errorDetail(error, [credentials.token])}`,
       };
-    for (const database of databases as Database[]) {
-      if (
-        !database ||
-        typeof database.database_name !== "string" ||
-        !database.database_name
-      )
-        return {
-          status: "configuration-failed",
-          package: p.packageName,
-          reason: "D1 database_name is required",
-        };
-      required.push({
-        package: p.packageName,
-        name: `${database.database_name}-${request.profile}`,
-      });
     }
   }
   const ids = new Map<string, string>();
@@ -74,21 +62,102 @@ export async function configure(
         return { ...failure, reason: list.reason };
       if (ids.has(resource.name)) continue;
       const match = matchDatabase(resource.name, list.databases);
-      if (match.status !== "matched")
+      if (match.status !== "matched") {
         return {
           ...failure,
           reason: `D1 database ${match.status}: ${resource.name}`,
         };
+      }
       ids.set(resource.name, match.id);
     }
   }
-  for (const p of configs.filter((p) => targets.has(p.packageName))) {
+  for (const { source, wrangler } of prepared) {
     try {
-      generate(p.path, context, ids);
+      const settings = new DeploymentSettings(source.path, request.profile);
+      const { connections } = settings.deployment;
+      if (wrangler) {
+        const snapshot = wrangler.data;
+        const variables = resolveVariables(
+          { ...snapshot.vars, ...settings.overrides },
+          connections.urls,
+          request,
+          targets,
+          workers,
+        );
+        if (variables.status === "connection-failed") {
+          return {
+            status: "configuration-failed",
+            package: source.packageName,
+            reason: variables.reason,
+          };
+        }
+        const services = resolveServiceBindings(
+          snapshot.services ?? [],
+          connections.bindings,
+          request,
+          targets,
+          workers,
+        );
+        if (services.status === "connection-failed") {
+          return {
+            status: "configuration-failed",
+            package: source.packageName,
+            reason: services.reason,
+          };
+        }
+        wrangler.update({
+          name: buildWorkerName(
+            source.wrangler!.name,
+            request.channel,
+            request.prNumber,
+          ),
+          vars: variables.variables,
+          services: services.services,
+          ...(snapshot.d1_databases !== undefined
+            ? {
+                d1_databases: snapshot.d1_databases.map((database) => {
+                  const name = `${database.database_name}-${request.profile}`;
+                  const id = ids.get(name);
+                  if (!id) throw new Error(`Unresolved D1 database: ${name}`);
+                  return { ...database, database_name: name, database_id: id };
+                }),
+              }
+            : {}),
+          ...(snapshot.r2_buckets !== undefined
+            ? {
+                r2_buckets: snapshot.r2_buckets.map((bucket) => ({
+                  ...bucket,
+                  bucket_name: `${bucket.bucket_name}-${request.profile}`,
+                })),
+              }
+            : {}),
+        });
+        if (request.channel === "preview") wrangler.useWorkersDev();
+      }
+      const dotenv = new Dotenv(source.path);
+      if (dotenv.exists()) {
+        const variables = resolveVariables(
+          { ...dotenv.variables, ...settings.overrides },
+          connections.urls,
+          request,
+          targets,
+          workers,
+        );
+        if (variables.status === "connection-failed") {
+          return {
+            status: "configuration-failed",
+            package: source.packageName,
+            reason: variables.reason,
+          };
+        }
+        dotenv.updateVariables(variables.variables);
+        dotenv.derive(".env.production").save();
+      }
+      wrangler?.save();
     } catch (error) {
       return {
         status: "configuration-failed",
-        package: p.packageName,
+        package: source.packageName,
         reason: `Cannot generate deployment configuration: ${errorDetail(error, [credentials.token])}`,
       };
     }

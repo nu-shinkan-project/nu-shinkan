@@ -67,8 +67,8 @@ it("modifies and generates files only in the specified package", () => {
   expect(new Dotenv(first).variables.NAME).toBe("first");
   expect(new WranglerJsonc(first).name).toBe("first");
 
-  dotenv.rewriteOriginal();
-  wrangler.rewriteOriginal();
+  dotenv.save();
+  wrangler.save();
   expect(new Dotenv(first).variables.NAME).toBe("updated");
   expect(new WranglerJsonc(first).name).toBe("updated");
   expect(readFileSync(join(first, ".env.development"), "utf8")).toContain(
@@ -77,8 +77,8 @@ it("modifies and generates files only in the specified package", () => {
 
   dotenv.updateVariables({ NAME: "deploy" });
   wrangler.update({ name: "deploy" });
-  dotenv.genDeployment();
-  wrangler.genDeployment();
+  dotenv.derive(".env.production").save();
+  wrangler.derive("wrangler.deploy.jsonc").save();
   expect(readFileSync(join(first, ".env.production"), "utf8")).toBe(
     'VITE_NAME="deploy"',
   );
@@ -110,7 +110,7 @@ it("composes variable updates before saving and retains comments", () => {
   dotenv.updateVariables({ NAME: null, ADDED: "first" });
   dotenv.updateVariables({ ADDED: "second", VITE_OTHER: "value" });
   expect(dotenv.variables).toEqual({ ADDED: "second", OTHER: "value" });
-  dotenv.rewriteOriginal();
+  dotenv.save();
   expect(new Dotenv(root).variables).toEqual(dotenv.variables);
   expect(readFileSync(join(root, ".env.development"), "utf8")).toContain(
     "# keep",
@@ -135,7 +135,7 @@ it("preserves raw quoted values when reading, updating, and rewriting", () => {
   const dotenv = new Dotenv(root);
   expect(dotenv.variables).toEqual(values);
   dotenv.updateVariables({ ...dotenv.variables, ADDED: '"new value"' });
-  dotenv.rewriteOriginal();
+  dotenv.save();
   expect(new Dotenv(root).variables).toEqual({
     ...values,
     ADDED: '"new value"',

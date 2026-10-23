@@ -1,5 +1,5 @@
 import { cwd } from "node:process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import {
   applyEdits,
   modify as modifyJsonc,
@@ -26,12 +26,10 @@ export type {
  */
 export class WranglerJsonc {
   private readonly src: string;
-  private readonly gen: string;
   private content?: string;
 
   constructor(packagePath: string = cwd()) {
     this.src = resolve(packagePath, "wrangler.jsonc");
-    this.gen = resolve(packagePath, "wrangler.deploy.jsonc");
   }
 
   exists(): boolean {
@@ -73,39 +71,6 @@ export class WranglerJsonc {
     } else {
       writeFileSync(this.src, this.document, "utf-8");
     }
-  }
-
-  useProfile(profile: "staging" | "release"): void {
-    const { env, ...base } = this.data;
-    const selected = env?.[profile] ?? {};
-    this.content = JSON.stringify({
-      ...base,
-      ...selected,
-      vars: { ...base.vars, ...selected.vars },
-    });
-  }
-
-  useWorkersDev(): void {
-    for (const key of ["route", "routes"]) {
-      this.content = applyEdits(
-        this.document,
-        modifyJsonc(this.document, [key], undefined, {}),
-      );
-    }
-    this.update({ workers_dev: true });
-  }
-
-  rewriteOriginal(dryRun: boolean = false): void {
-    if (dryRun) {
-      console.log(`[dry-run] would save wrangler.jsonc:\n${this.document}`);
-    } else {
-      writeFileSync(this.src, this.document, "utf-8");
-    }
-  }
-
-  genDeployment(): void {
-    mkdirSync(dirname(this.gen), { recursive: true });
-    writeFileSync(this.gen, JSON.stringify(this.data, null, 2) + "\n", "utf-8");
   }
 }
 
