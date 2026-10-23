@@ -15,8 +15,26 @@ jobs:
         uses: ./.github/actions/use-repo
       - name: ワークフローツールの型チェック
         run: pnpm --filter @repo/tools exec tsc --noEmit
-      - uses: ./.github/actions/vi-test
-      - uses: ./.github/actions/ui-test
+      - name: Playwrightブラウザのキャッシュ
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: 全workspaceのチェック
+        id: checks
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: pnpm checking run
+      - name: UIテストレポートの保存
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        uses: ./.github/actions/ui-test
+      - name: チェック結果の保存
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: checking-result
+          path: .artifacts/checking-result.json
+          if-no-files-found: ignore
 
       - name: 成功したタスクのキャッシュ保存
         if: ${{ always() && steps.setup.outcome == 'success' }}

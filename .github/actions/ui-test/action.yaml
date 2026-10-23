@@ -1,92 +1,19 @@
-name: UIテスト
-description: プロジェクトのUIテストを実行します。
-
+name: UIテストレポートのアップロード
+description: tools/checkingが収集したレポートをGitHub artifactへ保存します。
 inputs:
-  filter:
-    description: テスト対象を絞り込むフィルタオプションのJSON配列．[]は明示的に空を指定します．
-    required: false
-  pr_number:
-    description: |
-      PRまたはIssue番号。既定値はトリガーイベントのPRまたはIssue．
-      指定された場合は結果をコメントで通知します．
-      コメント投稿には pull-requests write または issues write 権限が必要です．
-    required: false
   artifact_name:
-    description: アップロードするアーティファクトの名前．
+    description: アップロードするアーティファクトの名前
     default: ui_test-reports
-
 outputs:
   artifact_url:
-    description: アップロードされたUIテストレポートのダウンロードリンク
+    description: UIテストレポートのダウンロードリンク
     value: ${{ steps.upload.outputs.artifact-url }}
-
 runs:
-  using: "composite"
+  using: composite
   steps:
-    - id: filter
-      uses: ./.github/actions/filter-util
-      with:
-        task: ui_test
-        filter: ${{ inputs.filter }}
-
-    - uses: actions/cache@v6
-      with:
-        path: ~/.cache/ms-playwright
-        key: playwright-browsers-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-
-    - name: UIテストの実行
-      id: tests
-      if: ${{ steps.filter.outputs.has_hit == 'true' }}
-      shell: bash
-      env:
-        HUSKY: 0
-        TEST: PACKAGE
-        DEPS_ARGS: ${{ steps.filter.outputs.deps_args }}
-        TEST_ARGS: ${{ steps.filter.outputs.direct_args }}
-      run: |
-        mapfile -t test_args < <(node -e 'JSON.parse(process.env.TEST_ARGS).forEach(arg => console.log(arg))')
-        mapfile -t install_args < <(node -e 'JSON.parse(process.env.DEPS_ARGS).forEach(arg => console.log(arg))')
-
-        pnpm install --frozen-lockfile --prefer-offline "${install_args[@]}"
-        # Playwright installs shared OS packages via apt; serialize across workspaces.
-        pnpm exec turbo run ui_test:prepare --concurrency=1 --only "${test_args[@]}"
-        pnpm exec turbo run ui_test --only "${test_args[@]}"
-
-    - name: UIテストレポートの収集
-      id: collect
-      if: ${{ !cancelled() && (steps.tests.outcome == 'success' || steps.tests.outcome == 'failure') }}
-      shell: bash
-      env:
-        ACTION_PATH: ${{ github.action_path }}
-      run: node "$ACTION_PATH/collect-ui_test-reports.mjs"
-
-    - name: UIテストレポートのアップロード
-      id: upload
-      if: ${{ !cancelled() && steps.collect.outcome == 'success' }}
+    - id: upload
       uses: actions/upload-artifact@v7
       with:
         name: ${{ inputs.artifact_name }}
-        path: ui_test-reports/
-        if-no-files-found: warn
-
-    - name: PRまたはIssueコメントの更新
-      if: ${{ !cancelled() && steps.upload.outputs.artifact-url != '' && (inputs.pr_number || github.event.pull_request.number || github.event.issue.number) }}
-      uses: ./.github/actions/comment-result
-      with:
-        pr_number: ${{ inputs.pr_number || github.event.pull_request.number || github.event.issue.number }}
-        marker: ui_test-report
-        title: Playwright UI test Report
-        status: ${{ steps.tests.outcome }}
-        artifact_url: ${{ steps.upload.outputs.artifact-url }}
-
-    - name: テスト失敗時のコメント投稿
-      if: ${{ failure() && steps.tests.outcome == 'failure' && (inputs.pr_number || github.event.pull_request.number || github.event.issue.number) }}
-      uses: ./.github/actions/comment-result
-      with:
-        pr_number: ${{ inputs.pr_number || github.event.pull_request.number || github.event.issue.number }}
-        marker: ui_test-failure
-        title: Playwright UI Test Failure
-        status: failure
-        body: |
-          Playwright UI tests failed during workflow execution. Please check the workflow run logs for detailed failure traces.
-
+        path: .artifacts/ui_test-reports/
+        if-no-files-found: ignore

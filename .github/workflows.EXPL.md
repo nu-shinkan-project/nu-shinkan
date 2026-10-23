@@ -22,9 +22,9 @@ reviewはイベントのPR HEADとBASEを使用する。manual-pickは受付時�
 
 ## 環境準備と実行
 
-`use-repo` はNode 24とpnpmを準備し、全workspaceの依存関係をインストールしてapp-configをビルドする。通常のデプロイでは、登録された `ui_test:prepare` をTurboの逐次実行で準備してからCLIを起動する。cleanupではブラウザ準備を行わない。依存の準備はWorkflowの責務であり、CLIは準備済みの環境を前提とする。
+`use-repo` はNode 24とpnpmを準備し、全workspaceの依存関係をインストールしてapp-configをビルドする。依存のインストールとキャッシュ操作はWorkflowが行う。UIテスト環境は、CLIが `tools/checking` を通じて、選択されたUIテスト対象の `ui_test:prepare` だけを逐次実行して準備する。cleanupではチェックもブラウザ準備も行わない。
 
-CLIは `計画 → sync → 影響集合のtest/lint/ui_test → 設定生成 → build → 順序付きdeploy → レポート` を実行する。Workflow側で同じチェックを重複実行しない。UIレポートは `.artifacts/ui_test-reports/` からartifactへ保存する。各フェーズの対象、完了状態、失敗理由はCLIとWorkflowのログで確認する。
+CLIは `計画 → sync → 影響集合のtest/lint/ui_test → 設定生成 → build → 順序付きdeploy → レポート` を実行する。Workflow側で同じチェックを重複実行しない。UIレポートは `tools/checking` が `.artifacts/ui_test-reports/` へ収集し、アップロード専用の `ui-test` Actionがartifactへ保存する。各フェーズの対象、完了状態、失敗理由はCLIとWorkflowのログで確認する。
 
 ## キャッシュ
 
@@ -44,4 +44,4 @@ GitHub Environmentsのpreview/staging/releaseには `CLOUDFLARE_ACCOUNT_ID` と 
 
 ## 検証
 
-内部ロジックのテストと型チェックはローカルで実行できる。Workflow YAMLや通知の代替テストは作らない。GitHub上の権限・排他・キャッシュ・通知、実際のデプロイと削除は、切替後のrunで確認する。nightlyは既定ブランチで全workspaceの単体テスト・UIテストとtoolsの型チェックを実行する。
+内部ロジックのテストと型チェックはローカルで実行できる。Workflow YAMLや通知の代替テストは作らない。GitHub上の権限・排他・キャッシュ・通知、実際のデプロイと削除は、切替後のrunで確認する。nightlyは既定ブランチで `pnpm checking run` を呼び、全workspaceの単体テスト・lint・UIテストを実行する。toolsの型チェックも行う。失敗後もチェックを継続し、UIレポートと `.artifacts/checking-result.json` を保存する。実行対象の選択と結果判定は `tools/checking` が担当し、Workflowにフィルタ引数の組み立てやレポート収集処理を置かない。
