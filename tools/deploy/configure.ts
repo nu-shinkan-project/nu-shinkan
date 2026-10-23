@@ -1,4 +1,4 @@
-import { errorDetail } from "./diagnostics.js";
+import { errorDetail } from "../diagnostics.js";
 import { generate } from "@repo/app-config/materialize";
 import { getWorkspaceConfigurations } from "../workspace/configs.js";
 import { listDatabases, matchDatabase, type Cloudflare } from "./cloudflare.js";

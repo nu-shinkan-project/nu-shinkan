@@ -1,4 +1,4 @@
-import { errorDetail } from "./diagnostics.js";
+import { errorDetail } from "../diagnostics.js";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import type { State, Check, Report } from "./types.js";

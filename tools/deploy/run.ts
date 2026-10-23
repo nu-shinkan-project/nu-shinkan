@@ -2,11 +2,12 @@ import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 import { rmSync } from "node:fs";
 import { findWorkspaceRoot } from "../workspace/root.js";
-import { commandFailure } from "./diagnostics.js";
-import { command } from "./command.js";
+import { commandFailure } from "../diagnostics.js";
+import { command } from "../command.js";
 import { plan, inventory } from "./plan.js";
 import { configure } from "./configure.js";
-import { checks, build, deploy } from "./tasks.js";
+import { build, deploy } from "./tasks.js";
+import { checks } from "../checking/checks.js";
 import { report } from "./report.js";
 import { orchestrate } from "./orchestrate.js";
 import type { Request, Package } from "./types.js";
@@ -96,7 +97,7 @@ export async function run(entry: Entry, args: string[]): Promise<number> {
       );
       const result = await plan(r, root);
       if (result.status === "planned") {
-        packages = inventory(root, r).packages;
+        packages = (await inventory(root, r)).packages;
         console.log(
           `[deploy] affected=${result.plan.affected.join(", ")} targets=${result.plan.targets.join(", ")} order=${result.plan.deploys.join(", ")}`,
         );

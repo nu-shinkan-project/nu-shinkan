@@ -1,3 +1,5 @@
+import type { Check, Checks } from "../checking/types.js";
+export type { Package, Check, Checks } from "../checking/types.js";
 export type Channel = "preview" | "staging" | "release";
 export type Source = "diff" | "full" | "manual-pick";
 export type Request = {
@@ -9,11 +11,6 @@ export type Request = {
   base: string | null;
   packages: string[];
   prNumber: number;
-};
-export type Package = {
-  name: string;
-  path: string;
-  scripts: Record<string, string>;
 };
 export type Plan = {
   initialSource: Source;
@@ -35,14 +32,6 @@ export type Planning =
     };
 export type Sync =
   { status: "synced" } | { status: "sync-failed"; reason: string };
-export type Check = {
-  package: string;
-  task: string;
-  status: "passed" | "failed" | "execution-error" | "no-script";
-  cached: boolean;
-  reason?: string;
-};
-export type Checks = { status: "passed" | "checks-failed"; results: Check[] };
 export type Configuration =
   | { status: "generated" }
   | {

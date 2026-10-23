@@ -26,15 +26,15 @@ pnpm exec tsx tools/workspace/configs-cli.ts --targets @repo/dummy-preview-api
 
 `deploy/update.ts`、`full.ts`、`review.ts`、`manual-pick.ts` は引数を内部処理へ渡す薄いCLI。`run.ts` が入力を検証し、対象commitとcheckoutの一致を確認して `orchestrate.ts` を呼ぶ。開始時と最終のmode、影響集合とターゲット集合、各フェーズの結果を保持し、想定する失敗でもレポートを生成してから終了する。
 
-`plan.ts` はapps/packagesを列挙し、起点とTurbo lsによる依存元への展開から影響集合を作る。reviewでは接続グラフのreview入口からの経路をターゲットにする。manual-pickも同じ選定規則を使う。Service Bindingの参照先を先にデプロイし、循環は強連結成分として警告する。
+`plan.ts` は `checking/packages.ts` の共通APIで取得したworkspaceからapps/packagesを選び、起点と共通APIによる依存元への展開から影響集合を作る。reviewでは接続グラフのreview入口からの経路をターゲットにする。manual-pickも同じ選定規則を使う。Service Bindingの参照先を先にデプロイし、循環は強連結成分として警告する。
 
 `configure.ts` はsync後の設定とCloudflareの既存D1一覧を収集し、app-configの単一パッケージ生成処理へ渡す。生成物は `.env.production` と `wrangler.deploy.jsonc`。app-configはworkspace列挙やAPI問い合わせを担当しない。KVの名前による自動bindは未対応で、明示IDを保持する。
 
-`tasks.ts` は影響パッケージのtest/lint/ui_testをTurbo経由で逐次実行する。失敗しても残りのチェックを実行する。すべて成功した後で通常buildを実行し、Wranglerで順序付きデプロイを行う。個別デプロイの失敗後も残りを続け、全体の成功・部分失敗・失敗を返す。ビルドと設定生成は別のフェーズであり、パッケージ側のbuildはchannelを参照しない。
+影響パッケージのtest/lint/ui_testは `checking/checks.ts` を利用して実行する。UI環境の準備・結果収集も共通処理が行い、失敗しても残りのチェックを実行する。すべて成功した後で `deploy/tasks.ts` が通常buildとWranglerによる順序付きデプロイを行う。個別デプロイの失敗後も残りを続け、全体の成功・部分失敗・失敗を返す。ビルドと設定生成は別のフェーズであり、パッケージ側のbuildはchannelを参照しない。
 
 `deploy/cleanup.ts` はPR番号を受け取り、`cleanup-operations.ts` で実在Workerの列挙、厳密なsuffixによる選別、逐次削除と結果集約を行う。現在のソースは削除対象の根拠にしない。
 
-GitHub固有のイベント・権限・環境準備・排他・通知先は[Workflow](../.github/workflows.EXPL.md)が扱う。デプロイ内部処理はGitHub APIやGitHub固有の環境変数を参照しない。`.artifacts/deploy-report.md` は通知先に依存しないMarkdownであり、掲載はGitHub側が行う。
+GitHub固有のイベント・権限・依存のインストール・キャッシュ操作・排他・通知先は[Workflow](../.github/workflows.EXPL.md)が扱う。デプロイ内部処理はGitHub APIやGitHub固有の環境変数を参照しない。`.artifacts/deploy-report.md` は通知先に依存しないMarkdownであり、掲載はGitHub側が行う。
 
 ```sh
 pnpm --filter @repo/tools test --run

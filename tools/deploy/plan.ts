@@ -1,10 +1,9 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { DeploymentYaml, type Deployment } from "@repo/app-config/deployment";
 import { ConnectionGraph } from "../connection-graph/graph.js";
 import { getWorkspaceConfigurations } from "../workspace/configs.js";
-import { commandFailure, errorDetail } from "./diagnostics.js";
-import { command } from "./command.js";
+import { commandFailure, errorDetail } from "../diagnostics.js";
+import { listPackages } from "../checking/packages.js";
+import { command } from "../command.js";
 import type { Package, Request, Planning, Source } from "./types.js";
 
 export type Inventory = {
@@ -12,17 +11,16 @@ export type Inventory = {
   deployments: ReadonlyMap<string, Deployment>;
   bindings: [string, string][];
 };
-export function inventory(root: string, request: Request): Inventory {
+export async function inventory(
+  root: string,
+  request: Request,
+): Promise<Inventory> {
   const configs = getWorkspaceConfigurations(root).filter((p) =>
     /^(apps|packages)\//.test(p.pathRel),
   );
-  const packages = configs.map((p) => ({
-    name: p.packageName,
-    path: p.pathRel,
-    scripts:
-      JSON.parse(readFileSync(resolve(p.path, "package.json"), "utf8"))
-        .scripts ?? {},
-  }));
+  const packages = (await listPackages(root)).filter((p) =>
+    configs.some((config) => config.packageName === p.name),
+  );
   const deployments = new Map(
     configs.map((p) => [p.packageName, readDeployment(p.path)]),
   );
@@ -184,7 +182,7 @@ export function finalizePlan(
 export async function plan(request: Request, root: string): Promise<Planning> {
   let data: Inventory;
   try {
-    data = inventory(root, request);
+    data = await inventory(root, request);
   } catch (error) {
     return {
       status: "unavailable",
@@ -227,35 +225,9 @@ export async function plan(request: Request, root: string): Promise<Planning> {
     };
   let affected = selection.origins;
   if (selection.source !== "full" && affected.length) {
-    const result = await command(
-      "pnpm",
-      [
-        "exec",
-        "turbo",
-        "ls",
-        ...affected.map((n) => `--filter=...${n}`),
-        "--output=json",
-      ],
-      root,
-      true,
-    );
-    if (result.status !== "completed" || result.code !== 0)
-      return {
-        status: "unavailable",
-        reason: commandFailure(result, "Turbo dependency selection failed"),
-        unknownPackages: [],
-      };
     try {
-      const value = JSON.parse(result.stdout);
-      if (
-        !Array.isArray(value.packages?.items) ||
-        value.packages.items.some(
-          (p: { name: unknown }) => typeof p.name !== "string",
-        )
-      )
-        throw new Error("Invalid Turbo inventory");
       const expanded = new Set(
-        value.packages.items.map((p: { name: string }) => p.name),
+        (await listPackages(root, affected, true)).map((p) => p.name),
       );
       affected = data.packages
         .filter((p) => expanded.has(p.name))
