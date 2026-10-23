@@ -3,9 +3,9 @@
 This project uses two repositories:
 
 * Main repository: `nu-shinkan`
-* Wiki repository: `docs`
+* Docs repository: `docs`
 
-The wiki repository must be available at:
+The docs repository must be available at:
 
 `[nu-shinkan repository root]/docs/`
 

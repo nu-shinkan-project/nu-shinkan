@@ -28,7 +28,7 @@ pnpm install --frozen-lockfile
 pnpm prepare
 
 # ---------------------------
-# Wiki Repo Setup
+# Docs Repo Setup
 # ---------------------------
 
 if [[ ! -d "docs" ]]; then

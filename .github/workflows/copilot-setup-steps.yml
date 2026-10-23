@@ -20,7 +20,7 @@ jobs:
       - name: Checkout product
         uses: actions/checkout@v7
 
-      - name: Checkout wiki
+      - name: Checkout docs
         uses: actions/checkout@v7
         with:
           repository: nu-shinkan-project/docs
