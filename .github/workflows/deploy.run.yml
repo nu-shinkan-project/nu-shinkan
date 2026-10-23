@@ -39,12 +39,6 @@ jobs:
         with:
           context: ${{ inputs.channel == 'preview' && format('preview-{0}', inputs.pr) || inputs.channel }}
           cache: ${{ inputs.entry != 'manual-pick' && inputs.entry != 'cleanup' }}
-      - name: UIテスト環境の準備
-        id: browsers
-        if: inputs.entry != 'cleanup'
-        run: |
-          echo '[workflow] Preparing registered UI-test environments serially.'
-          pnpm ui_test:prepare --only --concurrency=1
       - name: コメント入力の検証
         id: command
         if: inputs.entry == 'manual-pick'
@@ -72,12 +66,10 @@ jobs:
           key: ${{ steps.setup.outputs.cache-key }}
       - name: UIレポートの保存
         id: ui
-        if: always()
-        uses: actions/upload-artifact@v7
+        if: ${{ always() && steps.checkout.outcome == 'success' }}
+        uses: ./.github/actions/ui-test
         with:
-          name: ui-test-reports-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .artifacts/ui_test-reports/
-          if-no-files-found: ignore
+          artifact_name: ui-test-reports-${{ github.run_id }}-${{ github.run_attempt }}
       - name: 実行結果の通知
         if: ${{ always() && steps.checkout.outcome == 'success' }}
         uses: ./.github/actions/deployment-report
@@ -86,7 +78,7 @@ jobs:
           entry: ${{ inputs.entry }}
           pr: ${{ inputs.pr }}
           steps: ${{ toJSON(steps) }}
-          ui-url: ${{ steps.ui.outputs.artifact-url }}
+          ui-url: ${{ steps.ui.outputs.artifact_url }}
       - name: checkout失敗の通知
         if: ${{ always() && steps.checkout.outcome != 'success' }}
         uses: actions/github-script@v9
