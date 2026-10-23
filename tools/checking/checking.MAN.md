@@ -1,8 +1,18 @@
 # 共通チェックの実行
 
-`tools/checking` はworkspaceの列挙、単体テスト・lint・UIテストの実行と結果収集を行う。Nightlyとデプロイが同じ内部APIを利用する。GitHubへのアップロードやコメント投稿は呼び出し側が担当する。
+`tools/checking` はworkspaceの列挙、単体テスト・lint・UIテストの実行と結果収集を行う。ローカル実行とデプロイが同じ内部APIを利用する。GitHubへのアップロードやコメント投稿は呼び出し側が担当する。
 
 Node.js 24以上とリポジトリ指定のpnpmを準備し、ルートで依存関係をインストールしてから実行する。
+
+CI基盤の変更時は、開発者が関連する単体テスト・型チェック・lintをローカルで実施する。CI基盤専用のCIは設けていない。toolsの検証には次を使える。
+
+```sh
+pnpm --filter @repo/tools test --run
+pnpm --filter @repo/tools exec tsc --noEmit
+pnpm --filter @repo/tools exec eslint checking command.ts diagnostics.ts diagnostics.test.ts deploy
+```
+
+共通CLIは次のように実行する。
 
 ```sh
 pnpm checking list

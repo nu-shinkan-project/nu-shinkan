@@ -3,7 +3,7 @@ description: 全workspaceの依存関係と共有ツールを準備し、Turbo�
 inputs:
   context:
     description: PRまたはchannel単位のキャッシュ名前空間
-    default: tooling
+    required: true
   cache:
     description: falseの場合はTurboキャッシュを復元しない
     default: "true"
@@ -14,6 +14,15 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: キャッシュ区分の確認
+      shell: bash
+      env:
+        CACHE_CONTEXT: ${{ inputs.context }}
+      run: |
+        if [[ -z "$CACHE_CONTEXT" ]]; then
+          echo '::error::use-repo requires an explicit cache context.'
+          exit 1
+        fi
     - uses: pnpm/action-setup@v6.1.0
     - uses: actions/setup-node@v7
       with:

@@ -28,7 +28,7 @@ CLIは `計画 → sync → 影響集合のtest/lint/ui_test → 設定生成 �
 
 ## キャッシュ
 
-TurboキャッシュはPRまたはchannelの名前空間で復元し、run IDとrun attemptを含む新しいキーで保存する。チェックの一部が失敗しても成功したタスクのキャッシュを保存する。復元・保存は失敗しても処理の成否を変更しない。
+`use-repo` の `context` は必須で、呼び出し側がPRまたはchannelのキャッシュ名前空間を明示する。Turboキャッシュはこの名前空間で復元し、run IDとrun attemptを含む新しいキーで保存する。チェックの一部が失敗しても成功したタスクのキャッシュを保存する。復元・保存は失敗しても処理の成否を変更しない。
 
 PR pushのmerge refとissue_commentの既定ブランチでは、GitHubのキャッシュ参照範囲が異なる。この間の共有に回避策は導入せず、manual-pickではTurboキャッシュの保存・復元を行わない。PR pushでは同じPR refのキャッシュを利用する。cleanupはTurboキャッシュを使用しない。setup-nodeが管理するpnpmの依存ダウンロードキャッシュとは区別する。
 
@@ -44,4 +44,8 @@ GitHub Environmentsのpreview/staging/releaseには `CLOUDFLARE_ACCOUNT_ID` と 
 
 ## 検証
 
-内部ロジックのテストと型チェックはローカルで実行できる。Workflow YAMLや通知の代替テストは作らない。GitHub上の権限・排他・キャッシュ・通知、実際のデプロイと削除は、切替後のrunで確認する。nightlyは既定ブランチで `pnpm checking run` を呼び、全workspaceの単体テスト・lint・UIテストを実行する。toolsの型チェックも行う。失敗後もチェックを継続し、UIレポートと `.artifacts/checking-result.json` を保存する。実行対象の選択と結果判定は `tools/checking` が担当し、Workflowにフィルタ引数の組み立てやレポート収集処理を置かない。
+previewデプロイはPR CIを兼ね、apps/packagesの影響集合に対してtest/lint/ui_testを実行する。デプロイ対象が空でも、影響パッケージがあれば検証する。staging/releaseでも既存のデプロイ時の検証・build・deployを行う。
+
+メインリポジトリにはNightly、mainへのpushを契機とする専用CI、CI基盤専用のCIを設けていない。mainへの統合結果の独立した自動検証と、全workspaceの定期的な再検証は行わない。preview CIの対象外となるworkspaceは別途自動検証されない場合がある。CI基盤の変更時は、開発者が適切なローカルテスト・型チェック・lintを実施する。判断の背景と制約は[ADR](../docs/ADR/26-10-23-retire-main-nightly.md)を参照する。
+
+内部ロジックのテストと型チェックはローカルで実行できる。Workflow YAMLや通知の代替テストは作らない。GitHub上の権限・排他・キャッシュ・通知、実際のデプロイと削除は、切替後のrunで確認する。
