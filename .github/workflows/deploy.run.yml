@@ -38,6 +38,7 @@ jobs:
         uses: ./.github/actions/use-repo
         with:
           context: ${{ inputs.channel == 'preview' && format('preview-{0}', inputs.pr) || inputs.channel }}
+          dependencies: ${{ inputs.entry == 'cleanup' && 'cleanup' || 'full' }}
           cache: ${{ inputs.entry != 'manual-pick' && inputs.entry != 'cleanup' }}
       - name: コメント入力の検証
         id: command

@@ -1,9 +1,12 @@
 name: リポジトリセットアップ
-description: 全workspaceの依存関係と共有ツールを準備し、Turboキャッシュを復元します。
+description: 用途に必要な依存関係を準備し、デプロイではTurboキャッシュを復元します。
 inputs:
   context:
     description: PRまたはchannel単位のキャッシュ名前空間
     required: true
+  dependencies:
+    description: fullは全workspace、cleanupはルートの実行ツールだけを準備する
+    default: full
   cache:
     description: falseの場合はTurboキャッシュを復元しない
     default: "true"
@@ -18,17 +21,17 @@ runs:
       shell: bash
       env:
         CACHE_CONTEXT: ${{ inputs.context }}
+        DEPENDENCIES: ${{ inputs.dependencies }}
       run: |
         if [[ -z "$CACHE_CONTEXT" ]]; then
           echo '::error::use-repo requires an explicit cache context.'
           exit 1
         fi
-    - uses: pnpm/action-setup@v6.1.0
-    - uses: actions/setup-node@v7
-      with:
-        node-version: "24"
-        cache: pnpm
-        cache-dependency-path: pnpm-lock.yaml
+        if [[ "$DEPENDENCIES" != full && "$DEPENDENCIES" != cleanup ]]; then
+          echo '::error::Expected full or cleanup dependency preparation.'
+          exit 1
+        fi
+    - uses: ./.github/actions/use-node
     - name: Turboキャッシュの復元（失敗時は通常実行）
       if: inputs.cache == 'true'
       id: restore
@@ -51,6 +54,7 @@ runs:
           echo "[setup] Turbo cache restore: $CACHE_OUTCOME; exact hit: ${CACHE_HIT:-false}"
         fi
     - name: 全workspaceの依存関係と設定ツールの準備
+      if: inputs.dependencies == 'full'
       shell: bash
       env:
         HUSKY: "0"
@@ -59,3 +63,12 @@ runs:
         pnpm install --frozen-lockfile --prefer-offline
         pnpm --filter @repo/app-config build
         echo '[setup] Dependencies and app-config are ready.'
+    - name: cleanup実行ツールの準備
+      if: inputs.dependencies == 'cleanup'
+      shell: bash
+      env:
+        HUSKY: "0"
+      run: |
+        echo '[setup] Installing root execution tools for cleanup; install scripts are disabled.'
+        pnpm install --filter nu-shinkan --frozen-lockfile --prefer-offline --ignore-scripts
+        echo '[setup] Cleanup tools are ready; app-config build is not required.'

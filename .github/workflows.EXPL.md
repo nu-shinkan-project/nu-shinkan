@@ -22,7 +22,7 @@ reviewはイベントのPR HEADとBASEを使用する。manual-pickは受付時�
 
 ## 環境準備と実行
 
-`use-repo` はNode 24とpnpmを準備し、全workspaceの依存関係をインストールしてapp-configをビルドする。依存のインストールとキャッシュ操作はWorkflowが行う。UIテスト環境は、CLIが `tools/checking` を通じて、選択されたUIテスト対象の `ui_test:prepare` だけを逐次実行して準備する。cleanupではチェックもブラウザ準備も行わない。
+`use-node` はNode 24とpnpmを準備する。`use-repo` は通常デプロイで全workspaceの依存関係をインストールし、app-configをビルドする。cleanupでは `--filter nu-shinkan --ignore-scripts` でルートの実行ツールだけを準備し、アプリのインストールやapp-configのビルドを行わない。tsxの実行はinstall scriptを無効にしたfiltered installでも起動できる。依存のインストールとキャッシュ操作はWorkflowが行う。UIテスト環境は、CLIが `tools/checking` を通じて、選択されたUIテスト対象の `ui_test:prepare` だけを逐次実行して準備する。cleanupではチェックもブラウザ準備も行わない。
 
 CLIは `計画 → sync → 影響集合のtest/lint/ui_test → 設定生成 → build → 順序付きdeploy → レポート` を実行する。Workflow側で同じチェックを重複実行しない。UIレポートは `tools/checking` が `.artifacts/ui_test-reports/` へ収集し、アップロード専用の `ui-test` Actionがartifactへ保存する。各フェーズの対象、完了状態、失敗理由はCLIとWorkflowのログで確認する。
 
