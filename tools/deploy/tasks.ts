@@ -2,19 +2,26 @@ import type { Package } from "../workspace/types.js";
 import { resolve } from "node:path";
 import { command } from "../command.js";
 import { commandFailure } from "../diagnostics.js";
-import { turboTask } from "../checking/tasks.js";
+import { runTurbo } from "../turbo/tasks.js";
 import type { Builds, Deployment, Deployments } from "./types.js";
 
 export async function build(
   root: string,
   packages: Package[],
 ): Promise<Builds> {
-  const results = await turboTask(root, packages, "build", false);
+  const run = await runTurbo(
+    root,
+    packages.filter((p) => p.scripts.build).map((p) => p.name),
+    "build",
+    {
+      only: false,
+      concurrency: 1,
+      continue: "always",
+    },
+  );
   return {
-    status: results.every((r) => r.status === "passed")
-      ? "built"
-      : "build-failed",
-    results,
+    status: run.status === "completed" ? "built" : "build-failed",
+    results: run.results,
   };
 }
 export function aggregateDeployment(results: Deployment[]): Deployments {

@@ -16,7 +16,7 @@ export async function checks(
   const results: Check[] = [];
   for (const task of tasks) {
     if (task !== "ui_test") {
-      results.push(...(await turboTask(root, packages, task, true)));
+      results.push(...(await turboTask(root, packages, task)));
       continue;
     }
     const uiPackages = packages.filter((p) => p.scripts.ui_test);
@@ -31,12 +31,7 @@ export async function checks(
         force: true,
       });
     }
-    const preparation = await turboTask(
-      root,
-      uiPackages,
-      "ui_test:prepare",
-      true,
-    );
+    const preparation = await turboTask(root, uiPackages, "ui_test:prepare");
     results.push(...preparation.filter((r) => r.status !== "no-script"));
     const blocked = new Set(preparation.filter(failed).map((r) => r.package));
     results.push(
@@ -55,7 +50,6 @@ export async function checks(
         root,
         packages.filter((p) => !blocked.has(p.name)),
         task,
-        true,
       )),
     );
     for (const pkg of uiPackages) {

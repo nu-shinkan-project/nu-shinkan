@@ -48,6 +48,15 @@ export function planConnections(
       {},
       workers,
     );
+    if (!predictSync)
+      for (const binding of bindings) {
+        const declared = config.declarations.bindings[binding.name];
+        if (
+          Object.hasOwn(config.declarations.bindings, binding.name) &&
+          workers.byPackage.get(declared!) !== binding.worker
+        )
+          throw new Error("Connection configuration changed after planning");
+      }
     for (const binding of bindings)
       result.push({
         source,

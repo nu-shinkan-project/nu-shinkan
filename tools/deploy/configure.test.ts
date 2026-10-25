@@ -103,6 +103,26 @@ const request: Request = {
   prNumber: 12,
   packages: [],
 };
+function channelRequest(channel: "preview" | "staging" | "release"): Request {
+  if (channel === "preview") return request;
+  if (channel === "release")
+    return {
+      ...request,
+      channel,
+      purpose: "update",
+      profile: "release",
+      source: "full",
+      prNumber: -1,
+    };
+  return {
+    ...request,
+    channel,
+    purpose: "update",
+    profile: "staging",
+    source: "full",
+    prNumber: -1,
+  };
+}
 it("reuses a single resource listing and materializes preview with staging resources", async () => {
   const root = fixture();
   const fetcher = vi.fn().mockResolvedValue(
@@ -229,12 +249,10 @@ it.each(["preview", "staging", "release"] as const)(
     );
     vi.stubGlobal("fetch", fetcher);
     expect(
-      await configure(
-        root,
-        plan,
-        { ...request, channel, profile },
-        { account: "a", token: "t" },
-      ),
+      await configure(root, plan, channelRequest(channel), {
+        account: "a",
+        token: "t",
+      }),
     ).toEqual({ status: "generated" });
     expect(fetcher).toHaveBeenCalledTimes(1);
     for (const name of ["a", "b"]) {
@@ -407,12 +425,10 @@ it.each(["preview", "staging", "release"] as const)(
       targets: channel === "preview" ? ["a", "b"] : ["a"],
     };
     expect(
-      await configure(
-        root,
-        selected,
-        { ...request, channel, profile },
-        { account: "a", token: "t" },
-      ),
+      await configure(root, selected, channelRequest(channel), {
+        account: "a",
+        token: "t",
+      }),
     ).toEqual({ status: "generated" });
     expect(fetcher).not.toHaveBeenCalled();
     const generated = JSON.parse(
