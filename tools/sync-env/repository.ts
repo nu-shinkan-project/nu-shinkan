@@ -32,7 +32,13 @@ export async function syncRepository(
       const declared = new Set(Object.keys(settings.declarations.bindings));
       return {
         source,
-        bindings: predicted.bindings.filter((b) => declared.has(b.name)),
+        bindings: [
+          ...new Map(
+            [...predicted.bindings, ...Object.values(predicted.profiles).flat()]
+              .filter((b) => declared.has(b.name))
+              .map((b) => [b.name, b]),
+          ).values(),
+        ],
       };
     });
   // sync:localを登録したパッケージだけをTurboで同期する。

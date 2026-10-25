@@ -1,5 +1,3 @@
-import { type Deployment } from "@repo/app-config/deployment";
-
 export type ConnectionGraphJSON = {
   packages: string[];
   edges: [string, string][];
@@ -16,7 +14,16 @@ export class ConnectionGraph {
 
   static fromDeployments(
     packages: string[],
-    configs: ReadonlyMap<string, Deployment>,
+    configs: ReadonlyMap<
+      string,
+      {
+        reviewEntry: boolean;
+        connections: {
+          bindings: Record<string, string>;
+          urls: Record<string, string>;
+        };
+      }
+    >,
   ): ConnectionGraph {
     const names = new Set(packages);
     if (names.size !== packages.length)

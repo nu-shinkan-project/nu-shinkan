@@ -120,3 +120,21 @@ it("passes the captured context through execution without exposing it in the rep
   expect(op.deploy).toHaveBeenCalledWith(plan, context);
   expect(result.state.planning).not.toHaveProperty("context");
 });
+
+it("keeps Turbo invocation failure details even when requested builds succeeded", async () => {
+  const op = operations();
+  op.build = async () => ({
+    status: "build-failed",
+    reason: "Turbo process terminated",
+    results: [
+      { package: "web", task: "build", status: "passed", cached: false },
+    ],
+  });
+  const outcome = await orchestrate(request, op);
+  expect(outcome.state.stopped).toEqual({
+    phase: "build",
+    reason: "Turbo process terminated",
+  });
+  expect(outcome.state.builds?.results[0]?.status).toBe("passed");
+  expect(op.deploy).not.toHaveBeenCalled();
+});

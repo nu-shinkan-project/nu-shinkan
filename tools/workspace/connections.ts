@@ -49,9 +49,20 @@ export function predictSynchronizedConnections(
   settings: PackageConnections,
   workers: Workers,
 ): PackageConnections {
+  const allBindings = [
+    ...settings.bindings,
+    ...Object.values(settings.profiles).flat(),
+  ];
+  synchronizeBindings(allBindings, settings.declarations.bindings, workers);
+  const declaredFor = (bindings: readonly BindingConnection[]) =>
+    Object.fromEntries(
+      Object.entries(settings.declarations.bindings).filter(([name]) =>
+        bindings.some((b) => b.name === name),
+      ),
+    );
   const bindings = synchronizeBindings(
     settings.bindings,
-    settings.declarations.bindings,
+    declaredFor(settings.bindings),
     workers,
   );
   const profiles: PackageConnections["profiles"] = {};
@@ -60,11 +71,7 @@ export function predictSynchronizedConnections(
     if (native)
       profiles[profile] = synchronizeBindings(
         native,
-        Object.fromEntries(
-          Object.entries(settings.declarations.bindings).filter(([name]) =>
-            native.some((b) => b.name === name),
-          ),
-        ),
+        declaredFor(native),
         workers,
       );
   }

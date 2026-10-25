@@ -22,6 +22,7 @@ export async function build(
   return {
     status: run.status === "completed" ? "built" : "build-failed",
     results: run.results,
+    ...(run.reason ? { reason: run.reason } : {}),
   };
 }
 export function aggregateDeployment(results: Deployment[]): Deployments {
