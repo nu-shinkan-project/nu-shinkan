@@ -116,9 +116,9 @@ export async function run(entry: Entry, args: string[]): Promise<number> {
     },
     checks: (p, context) =>
       checks(root, selectPackages([...context.packages.values()], p.affected)),
-    configure: async (p, r) => {
+    configure: async (p, r, context) => {
       console.log("[deploy] Generate configuration");
-      return configure(root, p, r, credentials);
+      return configure(root, p, r, credentials, [...context.packages.values()]);
     },
     build: (p, context) =>
       build(root, selectPackages([...context.packages.values()], p.builds)),

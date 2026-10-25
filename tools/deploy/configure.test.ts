@@ -9,12 +9,21 @@ import {
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, expect, it, vi } from "vitest";
-import { configure } from "./configure.js";
+import { configure as generateConfiguration } from "./configure.js";
 import type { Request, Plan } from "./types.js";
-vi.mock("../workspace/packages.js", () => ({
-  listPackages: async () =>
+const configure = (
+  root: string,
+  plan: Plan,
+  request: Request,
+  credentials: { account: string; token: string },
+) =>
+  generateConfiguration(
+    root,
+    plan,
+    request,
+    credentials,
     ["a", "b"].map((name) => ({ name, path: `apps/${name}`, scripts: {} })),
-}));
+  );
 const roots: string[] = [];
 afterEach(() => {
   vi.unstubAllGlobals();

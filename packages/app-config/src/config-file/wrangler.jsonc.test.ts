@@ -70,3 +70,28 @@ it("deletes null vars while preserving comments and unrelated settings", () => {
     vars: { PRIVATE: "keep", NEW: "new" },
   });
 });
+
+it("converts service identities without exposing or replacing native attributes", async () => {
+  const { readServiceConnections, serviceConnectionPatch, WranglerJson } =
+    await import("./wrangler.jsonc.js");
+  const native = {
+    name: "web",
+    services: [
+      {
+        binding: "API",
+        service: "old",
+        environment: "keep",
+        entrypoint: "Api",
+      },
+    ],
+  };
+  expect(readServiceConnections(native)).toEqual([
+    { name: "API", worker: "old" },
+  ]);
+  const derived = new WranglerJson("/unused", native);
+  derived.update(serviceConnectionPatch([{ name: "API", worker: "new" }]));
+  expect(derived.data.services).toEqual([
+    { binding: "API", service: "new", environment: "keep", entrypoint: "Api" },
+  ]);
+  expect(native.services[0]!.service).toBe("old");
+});

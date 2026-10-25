@@ -176,3 +176,29 @@ function patch(original: string, values: WranglerPatch): string {
 export const testExports = {
   patch,
 };
+
+/** Only the identity needed to resolve a service connection, independent of its file representation. */
+export type ServiceConnection = { name: string; worker: string };
+
+export function readServiceConnections(
+  config: WranglerConfig,
+  profile?: "staging" | "release",
+): ServiceConnection[] {
+  return (
+    profile
+      ? (config.env?.[profile]?.services ?? config.services ?? [])
+      : (config.services ?? [])
+  ).map(({ binding, service }) => ({ name: binding, worker: service }));
+}
+
+/** Preserve native attributes on the original model; pass only resolved identities. */
+export function serviceConnectionPatch(
+  connections: readonly ServiceConnection[],
+): WranglerPatch {
+  return {
+    services: connections.map(({ name, worker }) => ({
+      binding: name,
+      service: worker,
+    })),
+  };
+}

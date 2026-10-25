@@ -1,3 +1,4 @@
+import { DeploymentYaml } from "@repo/app-config/deployment";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -15,6 +16,7 @@ afterEach(() => {
 const configurations: WorkspaceConfiguration[] = ["api", "web", "shared"].map(
   (packageName) => ({
     packageName,
+    deployment: new DeploymentYaml(`/workspace/apps/${packageName}`),
     path: `/workspace/apps/${packageName}`,
     pathRel: `apps/${packageName}`,
   }),
@@ -27,6 +29,7 @@ function worker(packageName: string, name: unknown): WorkspaceConfiguration {
   return {
     packageName,
     path,
+    deployment: new DeploymentYaml(path),
     pathRel: `apps/${packageName}`,
     wrangler: new WranglerJsonc(path),
   };

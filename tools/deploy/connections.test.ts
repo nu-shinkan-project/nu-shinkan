@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { resolveVariables, resolveServiceBindings } from "./connections.js";
+import { resolveVariables, resolveBindingConnections } from "./connections.js";
 import type { Request } from "./types.js";
 const request: Request = {
   channel: "preview",
@@ -111,13 +111,13 @@ it("reports malformed preview URLs without including configuration values", () =
     reason: "Invalid URL for connection: API",
   });
 });
-it("resolves preview and native service names while retaining binding attributes", () => {
+it("resolves preview and native service identities", () => {
   const bindings = [
-    { binding: "API", service: "native-api", environment: "keep" },
-    { binding: "OTHER", service: "native-other" },
-    { binding: "UNDECLARED", service: "native" },
+    { name: "API", worker: "native-api" },
+    { name: "OTHER", worker: "native-other" },
+    { name: "UNDECLARED", worker: "native" },
   ];
-  const result = resolveServiceBindings(
+  const result = resolveBindingConnections(
     bindings,
     { API: "api", OTHER: "unknown-package" },
     request,
@@ -126,20 +126,20 @@ it("resolves preview and native service names while retaining binding attributes
   );
   expect(result).toEqual({
     status: "resolved",
-    services: [
-      { binding: "API", service: "bare-api-preview-8", environment: "keep" },
-      { binding: "OTHER", service: "native-other-staging" },
-      { binding: "UNDECLARED", service: "native-staging" },
+    connections: [
+      { name: "API", worker: "bare-api-preview-8" },
+      { name: "OTHER", worker: "native-other-staging" },
+      { name: "UNDECLARED", worker: "native-staging" },
     ],
   });
-  expect(bindings[0]!.service).toBe("native-api");
+  expect(bindings[0]!.worker).toBe("native-api");
 });
 it.each(["staging", "release"] as const)(
   "uses native binding names in %s",
   (channel) => {
     expect(
-      resolveServiceBindings(
-        [{ binding: "API", service: "native-api" }],
+      resolveBindingConnections(
+        [{ name: "API", worker: "native-api" }],
         { API: "api" },
         { ...request, channel, profile: channel },
         targets,
@@ -147,20 +147,20 @@ it.each(["staging", "release"] as const)(
       ),
     ).toEqual({
       status: "resolved",
-      services: [{ binding: "API", service: `native-api-${channel}` }],
+      connections: [{ name: "API", worker: `native-api-${channel}` }],
     });
   },
 );
 it("reports declarations without native bindings and selected targets without Workers", () => {
   expect(
-    resolveServiceBindings([], { API: "api" }, request, targets, workers),
+    resolveBindingConnections([], { API: "api" }, request, targets, workers),
   ).toEqual({
     status: "connection-failed",
     reason: "Missing native binding: API",
   });
   expect(
-    resolveServiceBindings(
-      [{ binding: "API", service: "api" }],
+    resolveBindingConnections(
+      [{ name: "API", worker: "api" }],
       { API: "web" },
       request,
       targets,

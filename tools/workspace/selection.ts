@@ -8,5 +8,11 @@ export function selectWorkspaceConfigurations(
   return selectPackages(
     configurations.map((pkg) => ({ name: pkg.packageName, config: pkg })),
     names,
-  ).map(({ config }) => ({ ...config, wrangler: config.wrangler?.data }));
+  ).map(({ config }) => ({
+    packageName: config.packageName,
+    path: config.path,
+    pathRel: config.pathRel,
+    ...(config.dotenv !== undefined ? { dotenv: config.dotenv } : {}),
+    wrangler: config.wrangler?.data,
+  }));
 }
