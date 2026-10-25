@@ -39,35 +39,17 @@ export function markdown(state: State): string {
   for (const warning of p.warnings) lines.push(`Warning: ${escape(warning)}`);
   if (!p.affected.length) lines.push("No check targets.");
   if (!p.deploys.length) lines.push("No deployment targets.");
-  const names = new Set([
-    ...p.affected,
-    ...p.targets,
-    ...(state.checks?.results ?? []).map((r) => r.package),
-    ...(state.builds?.results ?? []).map((r) => r.package),
-    ...(state.deployments?.results ?? []).map((r) => r.package),
-  ]);
   lines.push(
     "",
     "| Package | Membership | test | lint | ui_test | Build | Deploy |",
     "| --- | --- | --- | --- | --- | --- | --- |",
   );
-  const check = (
-    results: Check[] | undefined,
-    name: string,
-    task: string,
-    selected: boolean,
-  ) => {
-    const r = results?.find((r) => r.package === name && r.task === task);
-    return r
-      ? `${r.status}${r.cached ? " (cache)" : ""}`
-      : selected
-        ? "not run"
-        : "out of scope";
-  };
-  for (const name of names) {
-    const d = state.deployments?.results.find((r) => r.package === name);
+  for (const row of reportRows(state)) {
+    const task = (cell: TaskCell) =>
+      `${cell.status}${cell.cached ? " (cache)" : ""}`;
+    const deployment = `${row.deploy.status}${row.deploy.url ? ` (${escape(row.deploy.url)})` : ""}`;
     lines.push(
-      `| ${escape(name)} | ${p.targets.includes(name) ? "対象" : p.affected.includes(name) ? "影響下" : ""} | ${["test", "lint", "ui_test"].map((t) => check(state.checks?.results, name, t, p.affected.includes(name))).join(" | ")} | ${check(state.builds?.results, name, "build", p.builds.includes(name))} | ${d ? `${d.status}${d.url ? ` (${escape(d.url)})` : ""}` : p.deploys.includes(name) ? "not run" : "out of scope"} |`,
+      `| ${escape(row.package)} | ${row.membership} | ${[row.test, row.lint, row.ui_test, row.build].map(task).join(" | ")} | ${deployment} |`,
     );
   }
   for (const r of [
@@ -89,6 +71,81 @@ export function markdown(state: State): string {
     );
   return lines.join("\n") + "\n";
 }
+type TaskCell = { status: string; cached: boolean };
+export type ReportRow = {
+  package: string;
+  membership: string;
+  test: TaskCell;
+  lint: TaskCell;
+  ui_test: TaskCell;
+  build: TaskCell;
+  deploy: { status: string; url?: string };
+};
+
+/** Determine display values independently of Markdown formatting. */
+export function reportRows(state: State): ReportRow[] {
+  if (state.planning.status !== "planned") return [];
+  const p = state.planning.plan;
+  const names = new Set([
+    ...p.affected,
+    ...p.targets,
+    ...(state.checks?.results ?? []).map((r) => r.package),
+    ...(state.builds?.results ?? []).map((r) => r.package),
+    ...(state.deployments?.results ?? []).map((r) => r.package),
+  ]);
+  const cell = (
+    results: Check[] | undefined,
+    name: string,
+    task: string,
+    selected: boolean,
+  ): TaskCell => {
+    const result = results?.find((r) => r.package === name && r.task === task);
+    return result
+      ? { status: result.status, cached: result.cached }
+      : { status: selected ? "not run" : "out of scope", cached: false };
+  };
+  return [...names].map((name) => {
+    const deployment = state.deployments?.results.find(
+      (r) => r.package === name,
+    );
+    return {
+      package: name,
+      membership: p.targets.includes(name)
+        ? "対象"
+        : p.affected.includes(name)
+          ? "影響下"
+          : "",
+      test: cell(
+        state.checks?.results,
+        name,
+        "test",
+        p.affected.includes(name),
+      ),
+      lint: cell(
+        state.checks?.results,
+        name,
+        "lint",
+        p.affected.includes(name),
+      ),
+      ui_test: cell(
+        state.checks?.results,
+        name,
+        "ui_test",
+        p.affected.includes(name),
+      ),
+      build: cell(
+        state.builds?.results,
+        name,
+        "build",
+        p.builds.includes(name),
+      ),
+      deploy: deployment
+        ? { status: deployment.status, url: deployment.url }
+        : { status: p.deploys.includes(name) ? "not run" : "out of scope" },
+    };
+  });
+}
+
 export async function report(state: State, path: string): Promise<Report> {
   return writeReport(markdown(state), path);
 }

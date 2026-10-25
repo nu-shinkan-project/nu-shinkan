@@ -33,7 +33,9 @@ export function synchronizeBindings(
       throw new Error(`No Worker for binding: ${pkg}`);
   }
   return bindings.map((binding) => {
-    const declared = declarations[binding.name];
+    const declared = Object.hasOwn(declarations, binding.name)
+      ? declarations[binding.name]
+      : undefined;
     const worker =
       declared === undefined
         ? binding.worker

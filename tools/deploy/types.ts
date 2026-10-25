@@ -4,16 +4,35 @@ import type { Check, Checks } from "../checking/types.js";
 export type { Check, Checks } from "../checking/types.js";
 export type Channel = "preview" | "staging" | "release";
 export type Source = "diff" | "full" | "manual-pick";
-export type Request = {
-  channel: Channel;
-  purpose: "update" | "review";
-  profile: "staging" | "release";
-  source: Source;
+type RequestContext = {
   commit: string;
   base: string | null;
   packages: string[];
-  prNumber: number;
 };
+export type Request = RequestContext &
+  (
+    | {
+        channel: "preview";
+        purpose: "review";
+        profile: "staging";
+        source: Source;
+        prNumber: number;
+      }
+    | {
+        channel: "staging";
+        purpose: "update";
+        profile: "staging";
+        source: "diff" | "full";
+        prNumber: -1;
+      }
+    | {
+        channel: "release";
+        purpose: "update";
+        profile: "release";
+        source: "diff" | "full";
+        prNumber: -1;
+      }
+  );
 export type Plan = {
   initialSource: Source;
   source: Source;

@@ -36,6 +36,8 @@ Wranglerモデルを派生させてprofileを適用した後、使用するD1/R2
 
 生成先の `.env.production` と `wrangler.deploy.jsonc` は `configure.ts` が選び、保存自体は派生モデルの `save()` が行う。生成先の既存内容は置き換え、元の `.env.development` と `wrangler.jsonc` は保存しない。ネイティブファイルが存在しない形式は生成しない。選択済みD1/R2の `null` は配列として不正なため、API問い合わせ前に失敗する。複数ファイルの保存は原子的ではなく、後段の失敗時に保存済みファイルを巻き戻す保証はない。
 
+検証済みの要求はchannelで判別する型とし、purpose/profile、previewのPR番号とselection sourceの組み合わせを表す。Turboの実行・summary解釈は `turbo/tasks.ts` が担当する。checkingはtest用引数・環境変数とチェック対象を決め、deployは依存buildを含めた結果を採用する。Turbo全体の失敗は要求対象の成功で上書きしない。通知用の行の値は `reportRows()` で組み立て、Markdownへの整形を分ける。
+
 影響パッケージのtest/lint/ui_testは `checking/checks.ts` を利用して実行する。UI環境の準備・結果収集も共通処理が行い、失敗しても残りのチェックを実行する。すべて成功した後で `deploy/tasks.ts` が通常buildとWranglerによる順序付きデプロイを行う。個別デプロイの失敗後も残りを続け、全体の成功・部分失敗・失敗を返す。ビルドと設定生成は別のフェーズであり、パッケージ側のbuildはchannelを参照しない。
 
 `deploy/cleanup.ts` はPR番号を受け取り、`cleanup-operations.ts` で実在Workerの列挙、厳密なsuffixによる選別、逐次削除と結果集約を行う。現在のソースは削除対象の根拠にしない。

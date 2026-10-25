@@ -69,7 +69,14 @@ it("reports all unknown names and does not fall back from manual picks", () => {
   });
 });
 it("falls back only for unavailable comparisons or shared files", () => {
-  const r = { ...request, source: "diff" as const, purpose: "update" as const };
+  const r: Request = {
+    ...request,
+    channel: "staging",
+    profile: "staging",
+    prNumber: -1,
+    source: "diff",
+    purpose: "update",
+  };
   expect(
     collectOrigins(r, data.packages, {
       available: true,
@@ -103,4 +110,18 @@ it("orders dependencies before callers, preserving edges around a cycle", () => 
   expect(result.order.indexOf("b")).toBeLessThan(result.order.indexOf("web"));
   expect(result.warnings).toEqual(["Service Binding cycle: a, b"]);
   expect(deploymentOrder([], [])).toEqual({ order: [], warnings: [] });
+});
+
+it("orders long chains without recursion and ignores outside and self edges", () => {
+  const names = Array.from({ length: 12000 }, (_, i) => String(i));
+  const edges: [string, string][] = names
+    .slice(1)
+    .map((name, i) => [String(i), name]);
+  const result = deploymentOrder(names, [
+    ...edges,
+    ["0", "outside"],
+    ["0", "0"],
+  ]);
+  expect(result.order).toEqual([...names].reverse());
+  expect(result.warnings).toEqual([]);
 });

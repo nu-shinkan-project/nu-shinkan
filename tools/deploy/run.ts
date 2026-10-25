@@ -56,24 +56,36 @@ export function parseRequest(
       ))
   )
     throw new Error("Specify exact package names");
-  return {
-    request: {
-      channel: channel as Request["channel"],
-      purpose: review ? "review" : "update",
-      profile: channel === "release" ? "release" : "staging",
-      source:
-        entry === "full"
-          ? "full"
-          : entry === "manual-pick"
-            ? "manual-pick"
-            : "diff",
-      commit: values.commit,
-      base,
-      prNumber,
-      packages,
-    },
-    reportPath: values.report!,
-  };
+  const context = { commit: values.commit, base, packages };
+  const updateSource = entry === "full" ? ("full" as const) : ("diff" as const);
+  const request: Request =
+    channel === "preview"
+      ? {
+          ...context,
+          channel,
+          purpose: "review",
+          profile: "staging",
+          source: entry === "manual-pick" ? "manual-pick" : "diff",
+          prNumber,
+        }
+      : channel === "release"
+        ? {
+            ...context,
+            channel,
+            purpose: "update",
+            profile: "release",
+            source: updateSource,
+            prNumber: -1,
+          }
+        : {
+            ...context,
+            channel: "staging",
+            purpose: "update",
+            profile: "staging",
+            source: updateSource,
+            prNumber: -1,
+          };
+  return { request, reportPath: values.report! };
 }
 export async function run(entry: Entry, args: string[]): Promise<number> {
   const { request, reportPath } = parseRequest(entry, args);

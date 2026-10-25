@@ -9,7 +9,11 @@ import {
   readPackageConnections,
 } from "../workspace/configs.js";
 import { commandFailure, errorDetail } from "../diagnostics.js";
-import { listPackages, selectWithDependents } from "../workspace/packages.js";
+import {
+  listPackages,
+  selectWithDependents,
+  selectPackages,
+} from "../workspace/packages.js";
 import { command } from "../command.js";
 import type { Request, Planning, Source } from "./types.js";
 
@@ -38,63 +42,104 @@ export async function inventory(root: string): Promise<Inventory> {
   };
 }
 
-/** Strongly connected components preserve constraints outside each cycle. */
+/** Collapse cycles so constraints outside each cycle remain enforceable. */
 export function deploymentOrder(
   names: string[],
   edges: [string, string][],
 ): { order: string[]; warnings: string[] } {
   const selected = new Set(names);
-  const graph = new Map(
-    names.map((n) => [
-      n,
-      edges
-        .filter(([a, b]) => a === n && selected.has(b) && a !== b)
-        .map(([, b]) => b),
-    ]),
+  const dependencies = new Map(names.map((name) => [name, new Set<string>()]));
+  for (const [source, destination] of edges)
+    if (
+      source !== destination &&
+      selected.has(source) &&
+      selected.has(destination)
+    )
+      dependencies.get(source)!.add(destination);
+  const components = stronglyConnectedComponents(dependencies);
+  const order = orderComponents(dependencies, components);
+  const warnings = components
+    .filter((group) => group.length > 1)
+    .map((group) => `Service Binding cycle: ${group.join(", ")}`);
+  return { order, warnings };
+}
+
+function stronglyConnectedComponents(
+  dependencies: Map<string, Set<string>>,
+): string[][] {
+  const callers = new Map(
+    [...dependencies.keys()].map((name) => [name, new Set<string>()]),
   );
-  const visited = new Set<string>(),
-    finished: string[] = [];
-  function visit(n: string) {
-    if (visited.has(n)) return;
-    visited.add(n);
-    for (const to of graph.get(n)!) visit(to);
-    finished.push(n);
-  }
-  names.forEach(visit);
-  const assigned = new Set<string>(),
-    components: string[][] = [];
-  function reverse(n: string, group: string[]) {
-    if (assigned.has(n)) return;
-    assigned.add(n);
-    group.push(n);
-    for (const [from, tos] of graph) if (tos.includes(n)) reverse(from, group);
-  }
-  for (const n of [...finished].reverse())
-    if (!assigned.has(n)) {
-      const group: string[] = [];
-      reverse(n, group);
-      components.push(group.sort());
+  for (const [source, destinations] of dependencies)
+    for (const destination of destinations)
+      callers.get(destination)!.add(source);
+  const visited = new Set<string>();
+  const finished: string[] = [];
+  for (const start of dependencies.keys()) {
+    const pending: [string, boolean][] = [[start, false]];
+    while (pending.length) {
+      const [name, expanded] = pending.pop()!;
+      if (expanded) {
+        finished.push(name);
+        continue;
+      }
+      if (visited.has(name)) continue;
+      visited.add(name);
+      pending.push([name, true]);
+      for (const destination of [...dependencies.get(name)!].reverse())
+        pending.push([destination, false]);
     }
-  const membership = new Map(
-    components.flatMap((group, i) => group.map((n) => [n, i] as const)),
-  );
-  const ordered = new Set<number>(),
-    order: string[] = [];
-  function emit(i: number) {
-    if (ordered.has(i)) return;
-    ordered.add(i);
-    for (const n of components[i]!)
-      for (const to of graph.get(n)!)
-        if (membership.get(to) !== i) emit(membership.get(to)!);
-    order.push(...components[i]!);
   }
-  components.forEach((_, i) => emit(i));
-  return {
-    order,
-    warnings: components
-      .filter((g) => g.length > 1)
-      .map((g) => `Service Binding cycle: ${g.join(", ")}`),
-  };
+  const assigned = new Set<string>();
+  const components: string[][] = [];
+  for (const start of finished.reverse()) {
+    if (assigned.has(start)) continue;
+    const component: string[] = [];
+    const pending = [start];
+    while (pending.length) {
+      const name = pending.pop()!;
+      if (assigned.has(name)) continue;
+      assigned.add(name);
+      component.push(name);
+      pending.push(...callers.get(name)!);
+    }
+    components.push(component.sort());
+  }
+  return components;
+}
+
+function orderComponents(
+  dependencies: Map<string, Set<string>>,
+  components: string[][],
+): string[] {
+  const membership = new Map(
+    components.flatMap((group, index) =>
+      group.map((name) => [name, index] as const),
+    ),
+  );
+  const emitted = new Set<number>();
+  const order: string[] = [];
+  for (const start of components.keys()) {
+    const pending: [number, boolean][] = [[start, false]];
+    while (pending.length) {
+      const [index, expanded] = pending.pop()!;
+      if (expanded) {
+        order.push(...components[index]!);
+        continue;
+      }
+      if (emitted.has(index)) continue;
+      emitted.add(index);
+      pending.push([index, true]);
+      const destinations = components[index]!.flatMap((name) =>
+        [...dependencies.get(name)!].map((destination) =>
+          membership.get(destination)!,
+        ),
+      ).filter((destination) => destination !== index);
+      for (const destination of destinations.reverse())
+        pending.push([destination, false]);
+    }
+  }
+  return order;
 }
 
 export function collectOrigins(
@@ -180,9 +225,18 @@ export function finalizePlan(
       )
       .map((c) => [c.source, c.package!] as [string, string]),
   );
+  const executionPackages = new Map(data.workspace.map((p) => [p.name, p]));
+  if (executionPackages.size !== data.workspace.length)
+    throw new Error("Duplicate execution package name");
+  selectPackages(data.workspace, [
+    ...selection.origins,
+    ...affected,
+    ...targets,
+    ...order,
+  ]);
   return {
     status: "planned",
-    context: { packages: new Map(data.workspace.map((p) => [p.name, p])) },
+    context: { packages: executionPackages },
     plan: {
       initialSource: request.source,
       source: selection.source,

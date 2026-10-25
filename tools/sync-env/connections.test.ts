@@ -72,7 +72,7 @@ function fixture() {
   }
   writeFileSync(
     join(root, "apps/web/deployment.yaml"),
-    "connections:\n  bindings:\n    API: api-new\n",
+    "reviewEntry: true\nconnections:\n  bindings:\n    API: api-new\n",
   );
   vi.mocked(listPackages).mockResolvedValue(packages);
   vi.mocked(selectFilteredPackages).mockImplementation(
@@ -92,20 +92,39 @@ async function planning(
   channel: "preview" | "staging" | "release",
   affected = ["web", "api-new", "api-old"],
 ) {
-  const request: Request = {
-    channel,
-    profile: channel === "release" ? "release" : "staging",
-    purpose: channel === "preview" ? "review" : "update",
-    source: "full",
+  const context = {
+    source: "full" as const,
     commit: "a",
     base: null,
     packages: [],
-    prNumber: 7,
   };
+  const request: Request =
+    channel === "preview"
+      ? {
+          ...context,
+          channel,
+          purpose: "review",
+          profile: "staging",
+          prNumber: 7,
+        }
+      : channel === "release"
+        ? {
+            ...context,
+            channel,
+            purpose: "update",
+            profile: "release",
+            prNumber: -1,
+          }
+        : {
+            ...context,
+            channel,
+            purpose: "update",
+            profile: "staging",
+            prNumber: -1,
+          };
   const data = await inventory(root);
-  // Use update target selection here so all three channels exercise the same connection set.
   const result = finalizePlan(
-    { ...request, purpose: "update" },
+    request,
     data,
     collectOrigins(request, data.packages, { files: [], available: true }),
     affected,
@@ -198,7 +217,9 @@ it("stops generation before lookup or saving if synchronization did not produce 
     await configure(root, plan, request, { account: "", token: "" }, packages),
   ).toMatchObject({
     status: "configuration-failed",
-    reason: "Connection configuration changed after planning",
+    reason: expect.stringContaining(
+      "Connection configuration changed after planning",
+    ),
   });
   expect(existsSync(join(root, "apps/web/wrangler.deploy.jsonc"))).toBe(false);
 });
