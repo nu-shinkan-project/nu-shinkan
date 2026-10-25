@@ -62,3 +62,16 @@ it("predicts matching profile overrides without creating undeclared entries", ()
   expect(result.profiles.release).toEqual([]);
   expect(settings.bindings[0]!.worker).toBe("old-worker");
 });
+
+it("rejects empty native destinations while allowing declarations to repair stale values", () => {
+  expect(() =>
+    synchronizeBindings([{ name: "EXT", worker: "" }], {}, workers),
+  ).toThrow("No Worker for binding: EXT");
+  expect(
+    synchronizeBindings(
+      [{ name: "API", worker: "" }],
+      { API: "api-new" },
+      workers,
+    ),
+  ).toEqual([{ name: "API", worker: "new-worker", package: "api-new" }]);
+});
