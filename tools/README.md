@@ -12,5 +12,5 @@ pnpm sync
 設定一覧は JSON として標準出力へ返す。パッケージ名を指定すると、その設定だけを返す。不明なパッケージ名はエラーとなる。
 `pnpm sync` は各パッケージのローカル設定を同期する。`--dry-run` は変更せず確認する。
 
-接続グラフの操作は[接続グラフのマニュアル](connection-graph/README.md)、
+接続グラフの操作は[接続グラフのマニュアル](workspace/connections/README.md)、
 内部の責務と設定収集の説明は [Workspace の構成](workspace.EXPL.md) を参照する。

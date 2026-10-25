@@ -1,12 +1,15 @@
+import { readPackageConnections } from "../workspace/connections/read.js";
 import { planConnections } from "./connection-plan.js";
-import type { PackageConnections, Workers } from "../workspace/connections.js";
+import type {
+  PackageConnections,
+  Workers,
+} from "../workspace/connections/resolve.js";
 import type { Package } from "../workspace/types.js";
 import { type Deployment } from "@repo/app-config/deployment";
-import { ConnectionGraph } from "../connection-graph/graph.js";
+import { ConnectionGraph } from "../workspace/connections/graph.js";
 import {
   getWorkspaceConfigurations,
   workerMapping,
-  readPackageConnections,
 } from "../workspace/configs.js";
 import { commandFailure, errorDetail } from "../diagnostics.js";
 import {

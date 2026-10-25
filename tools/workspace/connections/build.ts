@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
-import { readConnectionGraph } from "../workspace/graph.js";
-import { findWorkspaceRoot } from "../workspace/root.js";
+import { readConnectionGraph } from "./read.js";
+import { findWorkspaceRoot } from "../root.js";
 
 try {
   parseArgs({ options: {} });
