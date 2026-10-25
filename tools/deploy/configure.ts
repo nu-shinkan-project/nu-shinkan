@@ -1,10 +1,10 @@
+import { readPackageConnections } from "../workspace/connections/read.js";
 import { planConnections, connectionSignature } from "./connection-plan.js";
 import { GlobalRuntimeEnvsYaml } from "@repo/app-config/global";
 import { errorDetail } from "../diagnostics.js";
 import {
   getWorkspaceConfigurations,
   workerMapping,
-  readPackageConnections,
 } from "../workspace/configs.js";
 import type { Package } from "../workspace/types.js";
 import { listDatabases, matchDatabase, type Cloudflare } from "./cloudflare.js";

@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import {
   synchronizeBindings,
   predictSynchronizedConnections,
-} from "./connections.js";
+} from "./resolve.js";
 const workers = {
   byPackage: new Map([
     ["api-new", "new-worker"],

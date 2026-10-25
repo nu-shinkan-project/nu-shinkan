@@ -4,7 +4,7 @@ export type ConnectionGraphJSON = {
   reviewEntries: string[];
 };
 
-/** 呼び出し元→接続先のグラフ。workspace・設定・JSONから構築する。 */
+/** 呼び出し元→接続先のグラフ。取得済みの接続宣言・JSONから構築する。 */
 export class ConnectionGraph {
   #data: ConnectionGraphJSON;
   #destinations: Map<string, Set<string>>;

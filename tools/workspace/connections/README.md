@@ -1,29 +1,29 @@
 # Connection graph
 
-[デプロイ設計](../../docs/design/deploy-design.md#review-に共通の-connection-グラフ)の review 用対象選定を、独立した CLI として提供する。リポジトリルートで実行する。
+[デプロイ設計](../../../docs/design/deploy-design.md#review-に共通の-connection-グラフ)の review 用対象選定を、独立した CLI として提供する。リポジトリルートで実行する。
 
 キャッシュ可能性を考慮し，エントリーポイントとして，`build.ts`と`select.ts`を提供している．
 
 ```sh
-pnpm exec tsx tools/connection-graph/build.ts > connection-graph.json
-pnpm exec tsx tools/connection-graph/select.ts \
+pnpm exec tsx tools/workspace/connections/build.ts > connection-graph.json
+pnpm exec tsx tools/workspace/connections/select.ts \
   --graph connection-graph.json \
-  @repo/dummy-preview-api > targets.json
+  @repo/organization-user-service > targets.json
 ```
 
 ファイルを保存せず、パイプでも接続できる。`--graph -` は標準入力を読む。
 
 ```sh
 set -o pipefail
-pnpm exec tsx tools/connection-graph/build.ts |
-  pnpm exec tsx tools/connection-graph/select.ts --graph - @repo/dummy-preview-api
+pnpm exec tsx tools/workspace/connections/build.ts |
+  pnpm exec tsx tools/workspace/connections/select.ts --graph - @repo/organization-user-service
 ```
 
 両 CLI とも結果の JSON を標準出力、警告・エラーを標準エラー出力へ書く。エラー時は終了コード 1。ファイルの保存先や GitHub Actions artifact へのアップロードは呼び出し側で決める。
 
 ## build.ts
 
-このリポジトリ専用で、CLI引数は受け付けない。`graph.ts` 自身の配置からpnpm workspaceルートを特定するため、カレントディレクトリによらず同じcheckoutを対象にする。
+このリポジトリ専用で、CLI引数は受け付けない。カレントディレクトリから親を辿ってpnpm workspaceルートを特定する。
 
 全パッケージの `deployment.yaml` を既存の app-config ローダーで読み、`connections.bindings` / `urls` を接続元 → 接続先の辺に変換する。自己ループ・不明な接続先は無視し、重複する辺をまとめる。設定省略・不正な `reviewEntry` の扱いもローダーに従う。
 

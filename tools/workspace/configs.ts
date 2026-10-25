@@ -1,10 +1,6 @@
-import type { PackageConnections } from "./connections.js";
 import { DeploymentYaml } from "@repo/app-config/deployment";
 import { resolve } from "node:path";
-import {
-  WranglerJsonc,
-  readServiceConnections,
-} from "@repo/app-config/wrangler";
+import { WranglerJsonc } from "@repo/app-config/wrangler";
 import { Dotenv } from "@repo/app-config/dotenv";
 import type { Package } from "./types.js";
 
@@ -51,20 +47,4 @@ export function workerMapping(configs: WorkspaceConfiguration[]) {
     byWorker.set(name, pkg.packageName);
   }
   return { byPackage, byWorker };
-}
-
-export function readPackageConnections(
-  source: WorkspaceConfiguration,
-): PackageConnections {
-  const config = source.wrangler?.data;
-  const profiles: PackageConnections["profiles"] = {};
-  for (const profile of ["staging", "release"] as const) {
-    if (config?.env?.[profile]?.services !== undefined)
-      profiles[profile] = readServiceConnections(config, profile);
-  }
-  return {
-    bindings: config ? readServiceConnections(config) : [],
-    profiles,
-    declarations: source.deployment.connections,
-  };
 }

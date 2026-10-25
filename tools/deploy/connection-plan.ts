@@ -3,7 +3,7 @@ import {
   synchronizeBindings,
   type PackageConnections,
   type Workers,
-} from "../workspace/connections.js";
+} from "../workspace/connections/resolve.js";
 import type { ConnectionPolicy } from "./connections.js";
 
 export type PlannedConnection = {

@@ -1,11 +1,11 @@
+import { readPackageConnections } from "../workspace/connections/read.js";
 import { WranglerJsonc } from "@repo/app-config/wrangler";
 import { listPackages, selectFilteredPackages } from "../workspace/packages.js";
 import {
   getWorkspaceConfigurations,
   workerMapping,
-  readPackageConnections,
 } from "../workspace/configs.js";
-import { predictSynchronizedConnections } from "../workspace/connections.js";
+import { predictSynchronizedConnections } from "../workspace/connections/resolve.js";
 import { GlobalRuntimeEnvsYaml } from "@repo/app-config/global";
 import { command } from "../command.js";
 import { commandFailure } from "../diagnostics.js";

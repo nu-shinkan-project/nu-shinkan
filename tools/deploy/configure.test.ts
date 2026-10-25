@@ -1,7 +1,7 @@
+import { readPackageConnections } from "../workspace/connections/read.js";
 import {
   getWorkspaceConfigurations,
   workerMapping,
-  readPackageConnections,
 } from "../workspace/configs.js";
 import { planConnections } from "./connection-plan.js";
 import {
