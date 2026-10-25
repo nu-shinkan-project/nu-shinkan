@@ -1,8 +1,10 @@
+import { planConnections, connectionSignature } from "./connection-plan.js";
 import { GlobalRuntimeEnvsYaml } from "@repo/app-config/global";
 import { errorDetail } from "../diagnostics.js";
 import {
   getWorkspaceConfigurations,
   workerMapping,
+  readPackageConnections,
 } from "../workspace/configs.js";
 import type { Package } from "../workspace/types.js";
 import { listDatabases, matchDatabase, type Cloudflare } from "./cloudflare.js";
@@ -23,13 +25,45 @@ export async function configure(
   const prepared: PreparedPackage[] = [];
   try {
     const configs = getWorkspaceConfigurations(root, packages);
-    const workers = workerMapping(configs).byPackage;
+    const mapping = workerMapping(configs);
     const shared = new GlobalRuntimeEnvsYaml().variablesFor(request.profile);
     const targets = new Set(plan.targets);
+    const actualConnections = [];
+    const settings = new Map(
+      configs.map((p) => [p.packageName, readPackageConnections(p)]),
+    );
+    for (const source of targets) {
+      try {
+        actualConnections.push(
+          ...planConnections(settings, mapping, request, targets, {
+            sources: new Set([source]),
+          }),
+        );
+      } catch (error) {
+        return {
+          status: "configuration-failed",
+          package: source,
+          reason: errorDetail(error, [credentials.token]),
+        };
+      }
+    }
+    if (
+      connectionSignature(actualConnections) !==
+      connectionSignature(plan.connections)
+    )
+      return {
+        status: "configuration-failed",
+        reason: "Connection configuration changed after planning",
+      };
     for (const source of configs.filter((p) => targets.has(p.packageName))) {
       try {
         prepared.push(
-          assemblePackage(source, request, targets, workers, shared),
+          assemblePackage(
+            source,
+            request,
+            plan.connections.filter((c) => c.source === source.packageName),
+            shared,
+          ),
         );
       } catch (error) {
         return {

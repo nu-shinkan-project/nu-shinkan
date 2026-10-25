@@ -1,3 +1,4 @@
+import type { PlannedConnection } from "./connection-plan.js";
 import type { Package } from "../workspace/types.js";
 import type { Check, Checks } from "../checking/types.js";
 export type { Check, Checks } from "../checking/types.js";
@@ -23,6 +24,7 @@ export type Plan = {
   builds: string[];
   deploys: string[];
   warnings: string[];
+  connections: PlannedConnection[];
 };
 export type ExecutionContext = { packages: ReadonlyMap<string, Package> };
 export type Planning =

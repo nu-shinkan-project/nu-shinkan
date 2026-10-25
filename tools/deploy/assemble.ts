@@ -2,17 +2,16 @@ import { resolve } from "node:path";
 import { Dotenv } from "@repo/app-config/dotenv";
 import { DeploymentSettings } from "@repo/app-config/settings";
 import {
-  readServiceConnections,
   serviceConnectionPatch,
   type WranglerJson,
 } from "@repo/app-config/wrangler";
 import type { WorkspaceConfiguration } from "../workspace/configs.js";
 import { buildWorkerName } from "./worker-name.js";
 import {
-  resolveVariables,
-  resolveBindingConnections,
+  resolvePlannedVariables,
   type ConnectionPolicy,
 } from "./connections.js";
+import type { PlannedConnection } from "./connection-plan.js";
 
 export type PreparedPackage = {
   source: WorkspaceConfiguration;
@@ -25,8 +24,7 @@ export type PreparedPackage = {
 export function assemblePackage(
   source: WorkspaceConfiguration,
   policy: ConnectionPolicy,
-  targets: ReadonlySet<string>,
-  workers: ReadonlyMap<string, string>,
+  connections: PlannedConnection[],
   shared: Record<string, string>,
 ): PreparedPackage {
   const settings = new DeploymentSettings(
@@ -35,12 +33,10 @@ export function assemblePackage(
     shared,
   );
   const variables = (native: Record<string, string>) => {
-    const resolved = resolveVariables(
+    const resolved = resolvePlannedVariables(
       { ...native, ...settings.overrides },
-      settings.deployment.connections.urls,
-      policy,
-      targets,
-      workers,
+      connections.filter((c) => c.kind === "url"),
+      policy.prNumber,
     );
     if (resolved.status === "connection-failed")
       throw new Error(resolved.reason);
@@ -50,15 +46,6 @@ export function assemblePackage(
   wrangler?.flattenEnv(policy.profile);
   if (wrangler) {
     const snapshot = wrangler.data;
-    const services = resolveBindingConnections(
-      readServiceConnections(snapshot),
-      settings.deployment.connections.bindings,
-      policy,
-      targets,
-      workers,
-    );
-    if (services.status === "connection-failed")
-      throw new Error(services.reason);
     wrangler.update({
       name: buildWorkerName(
         source.wrangler!.name,
@@ -66,7 +53,14 @@ export function assemblePackage(
         policy.prNumber,
       ),
       vars: variables(snapshot.vars ?? {}),
-      ...serviceConnectionPatch(services.connections),
+      ...serviceConnectionPatch(
+        connections
+          .filter((c) => c.kind === "binding")
+          .map((c) => ({
+            name: c.name,
+            worker: buildWorkerName(c.worker!, c.channel, policy.prNumber),
+          })),
+      ),
       ...(snapshot.d1_databases !== undefined
         ? {
             d1_databases: snapshot.d1_databases.map((d) => ({

@@ -25,6 +25,7 @@ it("reports failed checks even without deployment targets, distinguishing member
         builds: [],
         deploys: [],
         warnings: ["cycle"],
+        connections: [],
       },
     },
     status: "failure",

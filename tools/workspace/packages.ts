@@ -92,3 +92,30 @@ export function selectPackages<T extends { name: string }>(
     throw new Error(`Unknown packages: ${unknown.join(", ")}`);
   return names ? packages.filter((p) => names.includes(p.name)) : packages;
 }
+
+/** Turbo owns filter syntax, exclusions and dependency expansion. */
+export async function selectFilteredPackages(
+  root: string,
+  packages: Package[],
+  filters: string[],
+): Promise<Package[]> {
+  if (!filters.length) return packages;
+  const run = await command(
+    "pnpm",
+    [
+      "exec",
+      "turbo",
+      "ls",
+      "--output=json",
+      ...filters.map((f) => `--filter=${f}`),
+    ],
+    root,
+    true,
+  );
+  if (run.status !== "completed" || run.code !== 0)
+    throw new Error(commandFailure(run, "Turbo filter selection failed"));
+  return selectPackages(
+    packages,
+    parseInventory(JSON.parse(run.stdout)).map((p) => p.name),
+  );
+}
