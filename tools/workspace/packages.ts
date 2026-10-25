@@ -27,7 +27,7 @@ export function parseInventory(value: unknown): ListedPackage[] {
   });
 }
 
-/** Undefined selects all workspaces; an empty list selects none. */
+/** Enumerate Turbo workspaces without loading native configuration files. */
 export async function listPackages(root: string): Promise<Package[]> {
   const listing = await command(
     "pnpm",
