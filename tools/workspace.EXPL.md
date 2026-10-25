@@ -62,3 +62,7 @@ app-configは設定の読み取り、編集、合成、派生、保存を担当�
 | `@repo/app-config/settings` | `DeploymentSettings(packagePath, profile)` または `DeploymentSettings(deployment, profile, shared)` が `deployment` と `overrides` を提供する。共有設定よりパッケージの設定を優先する。                                                                                          |
 
 `derive(path)` は現在の編集済みメモリ状態から派生し、ディスクには書き込まない。相対パスは元ファイルのディレクトリを基準にする。`save(true)` は保存せず、保存先と内容を表示する。`WranglerJsonc` と `WranglerJson` の `update()` は、変数のキー更新・nullによる削除、Service Bindingの更新・追加、その他の設定の置換について同じ意味を持つ。Wranglerの `data` は独立したスナップショットであり、取得値の変更はモデルに反映されない。D1/R2の構造検証は `WranglerJson` のprofile選択後の `data` 取得時に行い、使用しないprofileは検証しない。
+
+## コマンドの診断表示
+
+`command()` はstdout/stderrを解析用にそのまま保持し、通常実行では診断表示だけをstderrへ逐次出力する。UTF-8の途中で分割された文字はデコーダーで結合する。既知の秘密値の長さに応じた末尾、未完了行、引用値、改行を跨ぐ認証情報、未完了の制御シーケンスを保留し、マスキングしてから表示する。改行のない出力や未完了の引用は終了時まで遅れる場合がある。quiet成功時は診断を表示せず、失敗時だけ保持済みの出力をマスクして表示する。
