@@ -33,6 +33,8 @@ export function synchronizeBindings(
       throw new Error(`No Worker for binding: ${pkg}`);
   }
   return bindings.map((binding) => {
+    if (typeof binding.name !== "string" || !binding.name.trim())
+      throw new Error("Invalid native binding name");
     const declared = Object.hasOwn(declarations, binding.name)
       ? declarations[binding.name]
       : undefined;
@@ -40,6 +42,8 @@ export function synchronizeBindings(
       declared === undefined
         ? binding.worker
         : workers.byPackage.get(declared)!;
+    if (typeof worker !== "string" || !worker.trim())
+      throw new Error(`No Worker for binding: ${declared ?? binding.name}`);
     const pkg = declared ?? workers.byWorker.get(worker);
     return { name: binding.name, worker, ...(pkg ? { package: pkg } : {}) };
   });
