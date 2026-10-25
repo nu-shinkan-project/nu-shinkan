@@ -164,6 +164,7 @@ export function finalizePlan(
   );
   return {
     status: "planned",
+    context: { packages: new Map(data.packages.map((p) => [p.name, p])) },
     plan: {
       initialSource: request.source,
       source: selection.source,

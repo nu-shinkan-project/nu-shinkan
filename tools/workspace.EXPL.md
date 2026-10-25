@@ -26,6 +26,8 @@ pnpm exec tsx tools/workspace/configs-cli.ts @repo/dummy-preview-api
 
 `deploy/update.ts`、`full.ts`、`review.ts`、`manual-pick.ts` は引数を内部処理へ渡す薄いCLI。`run.ts` が入力を検証し、対象commitとcheckoutの一致を確認して `orchestrate.ts` を呼ぶ。開始時と最終のmode、影響集合とターゲット集合、各フェーズの結果を保持し、想定する失敗でもレポートを生成してから終了する。
 
+計画成功時に取得済みパッケージを `ExecutionContext` として後続処理へ渡す。レポートには計画・結果だけを渡し、設定編集用モデルは含めない。`sync-env/repository.ts` の `syncRepository()` はCLIとは独立して同期を実行する。
+
 `plan.ts` は `workspace/packages.ts` の共通APIで取得したworkspaceからapps/packagesを選び、起点と共通APIによる依存元への展開から影響集合を作る。reviewでは接続グラフのreview入口からの経路をターゲットにする。manual-pickも同じ選定規則を使う。Service Bindingの参照先を先にデプロイし、循環は強連結成分として警告する。
 
 `configure.ts` はsync後の設定からターゲットパッケージの生成を取りまとめる。`worker-name.ts` がWorker名を組み立て、`connections.ts` がターゲット内外のURL・Service Bindingを解決する。previewでは対象内を同じPRのWorkerへ向け、対象外では既存URLを維持し、URLがなければstagingのWorker名から補う。接続先の解決には対象外パッケージのWorker基底名も使う。

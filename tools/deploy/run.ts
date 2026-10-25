@@ -1,11 +1,12 @@
-import type { Package } from "../workspace/types.js";
+import { selectPackages } from "../workspace/packages.js";
+import { syncRepository } from "../sync-env/repository.js";
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 import { rmSync } from "node:fs";
 import { findWorkspaceRoot } from "../workspace/root.js";
 import { commandFailure } from "../diagnostics.js";
 import { command } from "../command.js";
-import { plan, inventory } from "./plan.js";
+import { plan } from "./plan.js";
 import { configure } from "./configure.js";
 import { build, deploy } from "./tasks.js";
 import { checks } from "../checking/checks.js";
@@ -88,9 +89,6 @@ export async function run(entry: Entry, args: string[]): Promise<number> {
     account: process.env.CLOUDFLARE_ACCOUNT_ID ?? "",
     token: process.env.CLOUDFLARE_API_TOKEN ?? "",
   };
-  let packages: Package[] = [];
-  const select = (names: string[]) =>
-    names.map((n) => packages.find((p) => p.name === n)!);
   const outcome = await orchestrate(request, {
     plan: async (r) => {
       console.log(
@@ -98,7 +96,6 @@ export async function run(entry: Entry, args: string[]): Promise<number> {
       );
       const result = await plan(r, root);
       if (result.status === "planned") {
-        packages = (await inventory(root, r)).packages;
         console.log(
           `[deploy] affected=${result.plan.affected.join(", ")} targets=${result.plan.targets.join(", ")} order=${result.plan.deploys.join(", ")}`,
         );
@@ -107,21 +104,33 @@ export async function run(entry: Entry, args: string[]): Promise<number> {
     },
     sync: async () => {
       console.log("[deploy] Sync");
-      const result = await command("pnpm", ["sync"], root);
-      return result.status === "completed" && result.code === 0
-        ? { status: "synced" }
-        : {
-            status: "sync-failed",
-            reason: commandFailure(result, "Repository synchronization failed"),
-          };
+      try {
+        await syncRepository(root);
+        return { status: "synced" };
+      } catch (error) {
+        return {
+          status: "sync-failed",
+          reason: error instanceof Error ? error.message : String(error),
+        };
+      }
     },
-    checks: (p) => checks(root, select(p.affected)),
+    checks: (p, context) =>
+      checks(root, selectPackages([...context.packages.values()], p.affected)),
     configure: async (p, r) => {
       console.log("[deploy] Generate configuration");
       return configure(root, p, r, credentials);
     },
-    build: (p) => build(root, select(p.builds)),
-    deploy: (p) => deploy(root, select(p.deploys)),
+    build: (p, context) =>
+      build(root, selectPackages([...context.packages.values()], p.builds)),
+    deploy: (p, context) =>
+      deploy(
+        root,
+        p.deploys.map((name) => {
+          const pkg = context.packages.get(name);
+          if (!pkg) throw new Error(`Missing execution package: ${name}`);
+          return pkg;
+        }),
+      ),
     report: (state) => report(state, path),
   });
   console.log(
