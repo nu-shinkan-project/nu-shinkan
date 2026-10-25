@@ -61,6 +61,30 @@ export class WranglerJsonc {
     this.content = patch(this.document, values);
   }
 
+  synchronizeServices(connections: readonly ServiceConnection[]): void {
+    const destinations = new Map(connections.map((c) => [c.name, c.worker]));
+    const snapshot = this.data;
+    const paths: (string | number)[][] = [["services"]];
+    for (const profile of ["staging", "release"])
+      paths.push(["env", profile, "services"]);
+    for (const path of paths) {
+      const entries =
+        path.length === 1
+          ? snapshot.services
+          : snapshot.env?.[path[1] as string]?.services;
+      for (const [index, entry] of (entries ?? []).entries()) {
+        const worker = destinations.get(entry.binding);
+        if (worker !== undefined && worker !== entry.service)
+          this.content = applyEdits(
+            this.document,
+            modifyJsonc(this.document, [...path, index, "service"], worker, {
+              formattingOptions: { insertSpaces: true, tabSize: 2 },
+            }),
+          );
+      }
+    }
+  }
+
   derive(path: string): WranglerJson {
     return new WranglerJson(resolve(dirname(this.src), path), this.data);
   }

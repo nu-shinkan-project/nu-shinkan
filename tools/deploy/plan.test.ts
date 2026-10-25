@@ -32,7 +32,18 @@ const data: Inventory = {
       }),
     ],
   ]),
-  bindings: [],
+  workspace: ["web", "api", "outside"].map((name) => ({
+    name,
+    path: `apps/${name}`,
+    scripts: {},
+  })),
+  connections: new Map(
+    ["web", "api", "outside"].map((name) => [
+      name,
+      { bindings: [], profiles: {}, declarations: { bindings: {}, urls: {} } },
+    ]),
+  ),
+  workers: { byPackage: new Map(), byWorker: new Map() },
 };
 it("keeps affected packages separate from hydrated targets for manual picks", () => {
   const selection = collectOrigins(request, data.packages, {

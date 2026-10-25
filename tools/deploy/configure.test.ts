@@ -1,4 +1,10 @@
 import {
+  getWorkspaceConfigurations,
+  workerMapping,
+  readPackageConnections,
+} from "../workspace/configs.js";
+import { planConnections } from "./connection-plan.js";
+import {
   mkdtempSync,
   mkdirSync,
   writeFileSync,
@@ -16,14 +22,33 @@ const configure = (
   plan: Plan,
   request: Request,
   credentials: { account: string; token: string },
-) =>
-  generateConfiguration(
+) => {
+  const packages = ["a", "b"].map((name) => ({
+    name,
+    path: `apps/${name}`,
+    scripts: {},
+  }));
+  const configs = getWorkspaceConfigurations(root, packages);
+  let connections: Plan["connections"] = [];
+  try {
+    connections = planConnections(
+      new Map(configs.map((p) => [p.packageName, readPackageConnections(p)])),
+      workerMapping(configs),
+      request,
+      new Set(plan.targets),
+      {},
+    );
+  } catch {
+    /* The production path reports invalid connections below. */
+  }
+  return generateConfiguration(
     root,
-    plan,
+    { ...plan, connections },
     request,
     credentials,
-    ["a", "b"].map((name) => ({ name, path: `apps/${name}`, scripts: {} })),
+    packages,
   );
+};
 const roots: string[] = [];
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -66,6 +91,7 @@ const plan: Plan = {
   builds: [],
   deploys: ["a", "b"],
   warnings: [],
+  connections: [],
 };
 const request: Request = {
   channel: "preview",
@@ -356,7 +382,7 @@ it.each(["preview", "staging", "release"] as const)(
         [profile]: {
           vars: { SHARED: "profile" },
           services: [
-            { binding: "API", service: "native-b", environment: "keep" },
+            { binding: "API", service: "bare-b", environment: "keep" },
             { binding: "EXTERNAL", service: "native-external" },
           ],
         },
@@ -370,7 +396,7 @@ it.each(["preview", "staging", "release"] as const)(
     writeFileSync(join(root, "apps/a/.env.production"), "VITE_OBSOLETE=remove");
     writeFileSync(
       join(root, "apps/a/deployment.yaml"),
-      `envs:\n  ${profile}:\n    SHARED: package\nconnections:\n  urls:\n    API: b\n  bindings:\n    API: b\n    EXTERNAL: unknown-package\n`,
+      `envs:\n  ${profile}:\n    SHARED: package\nconnections:\n  urls:\n    API: b\n  bindings:\n    API: b\n`,
     );
     // b is outside the generation targets but remains available for URL fallback.
     writeFileSync(join(root, "apps/b/wrangler.jsonc"), '{"name":"bare-b"}');
@@ -405,7 +431,7 @@ it.each(["preview", "staging", "release"] as const)(
       {
         binding: "API",
         service:
-          channel === "preview" ? "bare-b-preview-12" : `native-b-${profile}`,
+          channel === "preview" ? "bare-b-preview-12" : `bare-b-${profile}`,
         environment: "keep",
       },
       { binding: "EXTERNAL", service: `native-external-${profile}` },

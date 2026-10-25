@@ -1,3 +1,7 @@
+vi.mock("../workspace/packages.js", () => ({
+  listPackages: vi.fn(async () => []),
+  selectFilteredPackages: vi.fn(async () => []),
+}));
 import { afterEach, expect, it, vi } from "vitest";
 vi.mock("../command.js", () => ({ command: vi.fn() }));
 vi.mock("@repo/app-config/global", () => ({ GlobalRuntimeEnvsYaml: vi.fn() }));

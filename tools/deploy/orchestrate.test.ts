@@ -20,6 +20,7 @@ const plan: Plan = {
   builds: ["web"],
   deploys: ["api", "web"],
   warnings: [],
+  connections: [],
 };
 function operations(p = plan): Operations {
   return {

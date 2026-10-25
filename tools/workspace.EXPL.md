@@ -18,7 +18,7 @@ pnpm exec tsx tools/workspace/configs-cli.ts @repo/dummy-preview-api
 ## 接続と設定同期
 
 - `connection-graph/build.ts` / `select.ts`: [接続グラフの構築とreview対象選定](connection-graph/README.md)。
-- `sync-env/sync.ts [--root <directory>] [--filter <expression>] [--dry-run]`: `pnpm sync` の実体。`turbo run sync:local` で登録されたパッケージを同期する。`--filter` は繰り返し指定でき、`--check` はdry-runの別名。全件成功後のみ共有local設定のnullを消費し、部分同期では未同期パッケージに必要な削除指示を残す。
+- `sync-env/sync.ts [--root <directory>] [--filter <expression>] [--dry-run]`: `pnpm sync` の実体。`turbo run sync:local` で登録されたパッケージを同期する。`--filter` は繰り返し指定でき、`--check` はdry-runの別名。`deployment.yaml`のBinding宣言からWorker基底名を解決し、通常設定とstaging/releaseの既存Bindingを同期する。未宣言Binding・コメント・他属性は保持し、Bindingの自動追加は行わない。参照先は同期対象外も含む一覧から解決する。全処理成功後のみ共有local設定のnullを消費し、部分同期では未同期パッケージに必要な削除指示を残す。
 
 各パッケージの `sync:local` はapp-configの `sync-local` CLIを呼び、自分のネイティブ設定を更新する。単独実行では共有設定のnullを消費しない。Turboの同期・buildタスクはキャッシュを無効にしている。
 
@@ -28,9 +28,9 @@ pnpm exec tsx tools/workspace/configs-cli.ts @repo/dummy-preview-api
 
 計画成功時に取得済みパッケージを `ExecutionContext` として後続処理へ渡す。レポートには計画・結果だけを渡し、設定編集用モデルは含めない。`sync-env/repository.ts` の `syncRepository()` はCLIとは独立して同期を実行する。
 
-`plan.ts` は `workspace/packages.ts` の共通APIで取得したworkspaceからapps/packagesを選び、起点と共通APIによる依存元への展開から影響集合を作る。reviewでは接続グラフのreview入口からの経路をターゲットにする。manual-pickも同じ選定規則を使う。Service Bindingの参照先を先にデプロイし、循環は強連結成分として警告する。
+`plan.ts` は `workspace/packages.ts` の共通APIで取得したworkspaceからapps/packagesを選び、起点と共通APIによる依存元への展開から影響集合を作る。reviewでは接続グラフのreview入口からの経路をターゲットにする。manual-pickも同じ選定規則を使う。同期を予測した接続構成（Binding名・URL変数名、接続先パッケージ、Worker基底名、channel/profile）を計画へ保存する。レビュー用グラフはURLとBinding双方を使い、実行順序は実際のBinding辺だけを使う。対象外の参照先をデプロイ集合へ追加しない。Service Bindingの参照先を先にデプロイし、循環は強連結成分として警告する。
 
-`configure.ts` はsync後の設定からターゲットパッケージの生成を取りまとめる。`worker-name.ts` がWorker名を組み立て、`connections.ts` が設定形式から独立した接続情報を使ってターゲット内外のURL・Service Bindingを解決する。Wranglerの読取・反映はapp-configの `readServiceConnections()` と `serviceConnectionPatch()` が担当する。単一パッケージの組み立ては `assemble.ts` に渡し、共有設定は生成全体で一度取得する。previewでは対象内を同じPRのWorkerへ向け、対象外では既存URLを維持し、URLがなければstagingのWorker名から補う。接続先の解決には対象外パッケージのWorker基底名も使う。
+`configure.ts` はsync後の設定を読み直し、接続構成を計画と照合してから生成を取りまとめる。不一致は生成失敗として停止し、再計画はしない。環境変数全体の一致は要求しない。`worker-name.ts` がWorker名を組み立て、`connections.ts` が設定形式から独立した接続情報を使ってターゲット内外のURL・Service Bindingを解決する。Wranglerの読取・反映はapp-configの `readServiceConnections()` と `serviceConnectionPatch()` が担当する。単一パッケージの組み立ては `assemble.ts` に渡し、共有設定は生成全体で一度取得する。previewでは対象内を同じPRのWorkerへ向け、対象外では既存URLを維持し、URLがなければstagingのWorker名から補う。接続先の解決には対象外パッケージのWorker基底名も使う。
 
 Wranglerモデルを派生させてprofileを適用した後、使用するD1/R2設定の構造を検証する。全ターゲットの検証を終えてからCloudflareのD1一覧を一括取得し、実名に一致するIDを共有する。D1/R2の実名はprofileのsuffixを付けて決定し、公開型の配列を加工してモデルの `update()` で反映する。previewでもstagingのD1/R2を使用する。IDが未検出・複数一致、またはAPIが失敗した場合は生成を失敗として返し、元設定のIDにはフォールバックしない。KVの名前による自動bindは未対応で、明示IDを保持する。
 

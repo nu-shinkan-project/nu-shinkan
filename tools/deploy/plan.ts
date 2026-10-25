@@ -1,9 +1,12 @@
+import { planConnections } from "./connection-plan.js";
+import type { PackageConnections, Workers } from "../workspace/connections.js";
 import type { Package } from "../workspace/types.js";
-import { DeploymentYaml, type Deployment } from "@repo/app-config/deployment";
+import { type Deployment } from "@repo/app-config/deployment";
 import { ConnectionGraph } from "../connection-graph/graph.js";
 import {
   getWorkspaceConfigurations,
   workerMapping,
+  readPackageConnections,
 } from "../workspace/configs.js";
 import { commandFailure, errorDetail } from "../diagnostics.js";
 import { listPackages, selectWithDependents } from "../workspace/packages.js";
@@ -12,35 +15,27 @@ import type { Request, Planning, Source } from "./types.js";
 
 export type Inventory = {
   packages: Package[];
+  workspace: Package[];
   deployments: ReadonlyMap<string, Deployment>;
-  bindings: [string, string][];
+  connections: ReadonlyMap<string, PackageConnections>;
+  workers: Workers;
 };
-export async function inventory(
-  root: string,
-  request: Request,
-): Promise<Inventory> {
-  const packages = (await listPackages(root)).filter((p) =>
-    /^(apps|packages)\//.test(p.path),
-  );
-  const configs = getWorkspaceConfigurations(root, packages);
+export async function inventory(root: string): Promise<Inventory> {
+  const allPackages = await listPackages(root);
+  const configs = getWorkspaceConfigurations(root, allPackages);
+  const packages = allPackages.filter((p) => /^(apps|packages)\//.test(p.path));
   const deployments = new Map(
-    configs.map((p) => [p.packageName, readDeployment(p.path)]),
+    configs.map((p) => [p.packageName, p.deployment]),
   );
-  const workerPackages = workerMapping(configs).byWorker;
-  const bindings: [string, string][] = [];
-  for (const p of configs) {
-    const config = p.wrangler?.data;
-    const services =
-      config?.env?.[request.profile]?.services ?? config?.services ?? [];
-    const configured = deployments.get(p.packageName)!.connections.bindings;
-    for (const service of services) {
-      const target =
-        configured[service.binding] ?? workerPackages.get(service.service);
-      if (target && target !== p.packageName)
-        bindings.push([p.packageName, target]);
-    }
-  }
-  return { packages, deployments, bindings };
+  return {
+    packages,
+    workspace: allPackages,
+    deployments,
+    connections: new Map(
+      configs.map((p) => [p.packageName, readPackageConnections(p)]),
+    ),
+    workers: workerMapping(configs),
+  };
 }
 
 /** Strongly connected components preserve constraints outside each cycle. */
@@ -158,13 +153,36 @@ export function finalizePlan(
   const apps = data.packages.filter(
     (p) => targets.includes(p.name) && p.path.startsWith("apps/"),
   );
+  let connections;
+  try {
+    connections = planConnections(
+      data.connections,
+      data.workers,
+      request,
+      new Set(targets),
+      { predictSync: true },
+    );
+  } catch (error) {
+    return {
+      status: "unavailable",
+      reason: `Cannot resolve connections: ${errorDetail(error)}`,
+      unknownPackages: [],
+    };
+  }
   const { order, warnings } = deploymentOrder(
     apps.map((p) => p.name),
-    data.bindings,
+    connections
+      .filter(
+        (c) =>
+          c.kind === "binding" &&
+          c.package !== undefined &&
+          (c.channel !== "preview" || targets.includes(c.package)),
+      )
+      .map((c) => [c.source, c.package!] as [string, string]),
   );
   return {
     status: "planned",
-    context: { packages: new Map(data.packages.map((p) => [p.name, p])) },
+    context: { packages: new Map(data.workspace.map((p) => [p.name, p])) },
     plan: {
       initialSource: request.source,
       source: selection.source,
@@ -175,13 +193,14 @@ export function finalizePlan(
       builds: apps.filter((p) => p.scripts.build).map((p) => p.name),
       deploys: order,
       warnings,
+      connections,
     },
   };
 }
 export async function plan(request: Request, root: string): Promise<Planning> {
   let data: Inventory;
   try {
-    data = await inventory(root, request);
+    data = await inventory(root);
   } catch (error) {
     return {
       status: "unavailable",
@@ -242,13 +261,4 @@ export async function plan(request: Request, root: string): Promise<Planning> {
     }
   }
   return finalizePlan(request, data, selection, affected);
-}
-
-function readDeployment(path: string): Deployment {
-  const config = new DeploymentYaml(path);
-  return {
-    envs: config.envs,
-    connections: config.connections,
-    reviewEntry: config.reviewEntry,
-  };
 }
