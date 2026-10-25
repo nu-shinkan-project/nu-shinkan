@@ -63,7 +63,11 @@ export type Configuration =
       package?: string;
       resource?: { kind: string; name: string };
     };
-export type Builds = { status: "built" | "build-failed"; results: Check[] };
+export type Builds = {
+  status: "built" | "build-failed";
+  results: Check[];
+  reason?: string;
+};
 export type Deployment = {
   package: string;
   status: "deployed" | "deploy-failed";

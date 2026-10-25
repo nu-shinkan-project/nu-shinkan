@@ -233,3 +233,53 @@ it("does not add an out-of-scope destination to deployment order and connects pr
     channel: "staging",
   });
 });
+
+it("synchronizes bindings that exist only in profile overrides without creating a base services array", async () => {
+  const { root, packages, path } = fixture();
+  const native = JSON.parse(readFileSync(path, "utf8"));
+  delete native.services;
+  writeFileSync(path, JSON.stringify(native));
+  const { plan, request } = await planning(root, "staging");
+  await syncRepository(root);
+  const saved = JSON.parse(readFileSync(path, "utf8"));
+  expect(saved.services).toBeUndefined();
+  expect(saved.env.staging.services[0].service).toBe("api-new");
+  expect(saved.env.release.services[0].service).toBe("api-new");
+  expect(
+    await configure(root, plan, request, { account: "", token: "" }, packages),
+  ).toEqual({ status: "generated" });
+});
+it("preserves variable edits made by child synchronization and allows variable changes after planning", async () => {
+  const { root, packages, path } = fixture();
+  const { plan, request } = await planning(root, "staging");
+  vi.mocked(command).mockImplementation(async () => {
+    const native = JSON.parse(readFileSync(path, "utf8"));
+    native.vars = { KEEP: "synced" };
+    writeFileSync(path, JSON.stringify(native));
+    return { status: "completed", code: 0, stdout: "", stderr: "" };
+  });
+  await syncRepository(root);
+  expect(JSON.parse(readFileSync(path, "utf8")).vars).toEqual({
+    KEEP: "synced",
+  });
+  expect(
+    await configure(root, plan, request, { account: "", token: "" }, packages),
+  ).toEqual({ status: "generated" });
+});
+it("keeps URL review edges separate from undeclared native binding order constraints", async () => {
+  const { root } = fixture();
+  writeFileSync(
+    join(root, "apps/web/deployment.yaml"),
+    "connections:\n  urls:\n    API_URL: api-new\n",
+  );
+  const { plan } = await planning(root, "staging");
+  expect(plan.connections.find((c) => c.kind === "url")).toMatchObject({
+    package: "api-new",
+  });
+  expect(
+    plan.connections.find((c) => c.kind === "binding" && c.name === "API"),
+  ).toMatchObject({ package: "api-old" });
+  expect(plan.deploys.indexOf("api-old")).toBeLessThan(
+    plan.deploys.indexOf("web"),
+  );
+});

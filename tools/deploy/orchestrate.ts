@@ -82,7 +82,7 @@ async function prepareAndDeploy(
   if (plan.builds.length) {
     state.builds = await operations.build(plan, context);
     if (state.builds.status === "build-failed")
-      return stop("build", "One or more builds failed");
+      return stop("build", state.builds.reason ?? "One or more builds failed");
   }
   if (plan.deploys.length) {
     state.deployments = await operations.deploy(plan, context);
