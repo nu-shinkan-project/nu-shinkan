@@ -1,5 +1,5 @@
 import type { Check, Checks } from "../checking/types.js";
-export type { Package, Check, Checks } from "../checking/types.js";
+export type { Check, Checks } from "../checking/types.js";
 export type Channel = "preview" | "staging" | "release";
 export type Source = "diff" | "full" | "manual-pick";
 export type Request = {

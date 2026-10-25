@@ -4,16 +4,16 @@
 
 ## Workspace設定
 
-`workspace/root.ts` はカレントディレクトリから親を辿ってpnpm workspaceルートを探す。`workspace/configs.ts` の `getWorkspaceConfigurations(root?)` は `pnpm-workspace.yaml` のパターンと除外指定に従い、パッケージ名、絶対パス `path`、ルート相対パス `pathRel`、存在するWrangler・dotenv設定を返す。重複パッケージ名はエラーになる。
+`workspace/root.ts` はカレントディレクトリから親を辿ってpnpm workspaceルートを探す。`workspace/packages.ts` の `listPackages(root)` はTurboのworkspace一覧を基準とし、除外済みの集合をTurboの順序で取得する。ルートは含まず、重複名や範囲外パスを拒否する。`getWorkspaceConfigurations(root, packages)` は取得済み一覧から、パッケージ名、絶対パス `path`、ルート相対パス `pathRel`、存在するWrangler・dotenv設定を返す。重複パッケージ名はエラーになる。
 
 ```sh
 pnpm exec tsx tools/workspace/configs-cli.ts [--root <directory>]
-pnpm exec tsx tools/workspace/configs-cli.ts --targets @repo/dummy-preview-api
+pnpm exec tsx tools/workspace/configs-cli.ts @repo/dummy-preview-api
 ```
 
 通常のCLI出力は設定一覧で、Wranglerの内容をJSON化する。dotenvはapp-configと同じく `VITE_` 接頭辞の値だけを扱い、接頭辞を外す。設定値を含むため、一覧全体をActionsのログへ出す必要はない。
 
-`--targets` は後続の正確なパッケージ名を `{ package, path, workerName? }[]` に変換する。pathはworkspace相対、Worker名は基底名。名前の指定がなければ空配列となり、不明な名前・不正なWorker名はエラーになる。このCLIは設定一覧を操作するための補助ツールであり、デプロイ処理は内部関数から設定を取得する。
+名前を省略すると全件、指定するとその集合をworkspace順で返す。内部の `selectPackages(packages, names?)` は空配列を空集合として扱う。不明な名前はエラーとなる。Worker名の検証と重複検出は接続解決に必要な `workerMapping()` で行う。
 
 ## 接続と設定同期
 
@@ -26,7 +26,7 @@ pnpm exec tsx tools/workspace/configs-cli.ts --targets @repo/dummy-preview-api
 
 `deploy/update.ts`、`full.ts`、`review.ts`、`manual-pick.ts` は引数を内部処理へ渡す薄いCLI。`run.ts` が入力を検証し、対象commitとcheckoutの一致を確認して `orchestrate.ts` を呼ぶ。開始時と最終のmode、影響集合とターゲット集合、各フェーズの結果を保持し、想定する失敗でもレポートを生成してから終了する。
 
-`plan.ts` は `checking/packages.ts` の共通APIで取得したworkspaceからapps/packagesを選び、起点と共通APIによる依存元への展開から影響集合を作る。reviewでは接続グラフのreview入口からの経路をターゲットにする。manual-pickも同じ選定規則を使う。Service Bindingの参照先を先にデプロイし、循環は強連結成分として警告する。
+`plan.ts` は `workspace/packages.ts` の共通APIで取得したworkspaceからapps/packagesを選び、起点と共通APIによる依存元への展開から影響集合を作る。reviewでは接続グラフのreview入口からの経路をターゲットにする。manual-pickも同じ選定規則を使う。Service Bindingの参照先を先にデプロイし、循環は強連結成分として警告する。
 
 `configure.ts` はsync後の設定からターゲットパッケージの生成を取りまとめる。`worker-name.ts` がWorker名を組み立て、`connections.ts` がターゲット内外のURL・Service Bindingを解決する。previewでは対象内を同じPRのWorkerへ向け、対象外では既存URLを維持し、URLがなければstagingのWorker名から補う。接続先の解決には対象外パッケージのWorker基底名も使う。
 

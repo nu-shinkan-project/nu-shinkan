@@ -1,8 +1,9 @@
+import type { Package } from "../workspace/types.js";
 import { resolve } from "node:path";
 import { command } from "../command.js";
 import { commandFailure } from "../diagnostics.js";
 import { turboTask } from "../checking/tasks.js";
-import type { Package, Builds, Deployment, Deployments } from "./types.js";
+import type { Builds, Deployment, Deployments } from "./types.js";
 
 export async function build(
   root: string,

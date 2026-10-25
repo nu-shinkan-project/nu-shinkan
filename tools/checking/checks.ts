@@ -2,7 +2,8 @@ import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import { errorDetail } from "../diagnostics.js";
 import { turboTask } from "./tasks.js";
-import type { Package, Check, Checks } from "./types.js";
+import type { Check, Checks } from "./types.js";
+import type { Package } from "../workspace/types.js";
 
 export const checkTasks = ["test", "lint", "ui_test"] as const;
 export type CheckTask = (typeof checkTasks)[number];

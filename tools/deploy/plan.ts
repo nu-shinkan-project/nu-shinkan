@@ -1,10 +1,14 @@
+import type { Package } from "../workspace/types.js";
 import { DeploymentYaml, type Deployment } from "@repo/app-config/deployment";
 import { ConnectionGraph } from "../connection-graph/graph.js";
-import { getWorkspaceConfigurations } from "../workspace/configs.js";
+import {
+  getWorkspaceConfigurations,
+  workerMapping,
+} from "../workspace/configs.js";
 import { commandFailure, errorDetail } from "../diagnostics.js";
-import { listPackages } from "../checking/packages.js";
+import { listPackages, selectWithDependents } from "../workspace/packages.js";
 import { command } from "../command.js";
-import type { Package, Request, Planning, Source } from "./types.js";
+import type { Request, Planning, Source } from "./types.js";
 
 export type Inventory = {
   packages: Package[];
@@ -15,20 +19,14 @@ export async function inventory(
   root: string,
   request: Request,
 ): Promise<Inventory> {
-  const configs = getWorkspaceConfigurations(root).filter((p) =>
-    /^(apps|packages)\//.test(p.pathRel),
-  );
   const packages = (await listPackages(root)).filter((p) =>
-    configs.some((config) => config.packageName === p.name),
+    /^(apps|packages)\//.test(p.path),
   );
+  const configs = getWorkspaceConfigurations(root, packages);
   const deployments = new Map(
     configs.map((p) => [p.packageName, readDeployment(p.path)]),
   );
-  const workerPackages = new Map(
-    configs
-      .filter((p) => p.wrangler)
-      .map((p) => [p.wrangler!.name, p.packageName]),
-  );
+  const workerPackages = workerMapping(configs).byWorker;
   const bindings: [string, string][] = [];
   for (const p of configs) {
     const config = p.wrangler?.data;
@@ -227,7 +225,9 @@ export async function plan(request: Request, root: string): Promise<Planning> {
   if (selection.source !== "full" && affected.length) {
     try {
       const expanded = new Set(
-        (await listPackages(root, affected, true)).map((p) => p.name),
+        (await selectWithDependents(root, data.packages, affected, true)).map(
+          (p) => p.name,
+        ),
       );
       affected = data.packages
         .filter((p) => expanded.has(p.name))

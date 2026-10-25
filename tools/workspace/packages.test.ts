@@ -1,4 +1,4 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { parseInventory, selectPackages } from "./packages.js";
 
 const packages = [
@@ -29,3 +29,26 @@ it.each([
 ])("rejects ambiguous or invalid workspace inventory", (value) => {
   expect(() => parseInventory(value)).toThrow();
 });
+
+it("uses Turbo's excluded inventory and expands dependents within the captured set", async () => {
+  const { selectWithDependents } = await import("./packages.js");
+  const { command } = await import("../command.js");
+  const run = vi.mocked(command);
+  run.mockResolvedValue({
+    status: "completed",
+    code: 0,
+    stdout: JSON.stringify({
+      packages: { items: [...packages, { name: "outside", path: "tools" }] },
+    }),
+    stderr: "",
+  });
+  const captured = packages.map((p) => ({ ...p, scripts: {} }));
+  expect(
+    await selectWithDependents("/repo", captured, ["@repo/api"], true),
+  ).toEqual(captured);
+  expect(run).toHaveBeenCalledTimes(1);
+  expect(await selectWithDependents("/repo", captured, [], true)).toEqual([]);
+  expect(run).toHaveBeenCalledTimes(1);
+});
+
+vi.mock("../command.js", () => ({ command: vi.fn() }));

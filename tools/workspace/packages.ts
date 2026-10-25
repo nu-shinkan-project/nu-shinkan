@@ -16,6 +16,7 @@ export function parseInventory(value: unknown): ListedPackage[] {
       !item.name ||
       typeof item?.path !== "string" ||
       !item.path ||
+      item.path === "." ||
       isAbsolute(item.path) ||
       item.path.split(/[\\/]/).includes("..") ||
       names.has(item.name)
@@ -27,12 +28,7 @@ export function parseInventory(value: unknown): ListedPackage[] {
 }
 
 /** Undefined selects all workspaces; an empty list selects none. */
-export async function listPackages(
-  root: string,
-  names?: string[],
-  dependents = false,
-): Promise<Package[]> {
-  if (names?.length === 0) return [];
+export async function listPackages(root: string): Promise<Package[]> {
   const listing = await command(
     "pnpm",
     ["exec", "turbo", "ls", "--output=json"],
@@ -42,6 +38,23 @@ export async function listPackages(
   if (listing.status !== "completed" || listing.code !== 0)
     throw new Error(commandFailure(listing, "Turbo inventory failed"));
   const packages = parseInventory(JSON.parse(listing.stdout));
+  return packages.map((pkg) => {
+    const path = relative(root, resolve(root, pkg.path)).replaceAll("\\", "/");
+    const manifest = JSON.parse(
+      readFileSync(resolve(root, path, "package.json"), "utf8"),
+    );
+    return { name: pkg.name, path, scripts: manifest.scripts ?? {} };
+  });
+}
+
+/** Select from the captured inventory; only dependency expansion queries Turbo again. */
+export async function selectWithDependents(
+  root: string,
+  packages: Package[],
+  names?: string[],
+  dependents = false,
+): Promise<Package[]> {
+  if (names?.length === 0) return [];
   let selected = selectPackages(packages, names);
   if (names && dependents) {
     const expanded = await command(
@@ -65,16 +78,10 @@ export async function listPackages(
     );
     selected = packages.filter((p) => expandedNames.has(p.name));
   }
-  return selected.map((pkg) => {
-    const path = relative(root, resolve(root, pkg.path)).replaceAll("\\", "/");
-    const manifest = JSON.parse(
-      readFileSync(resolve(root, path, "package.json"), "utf8"),
-    );
-    return { name: pkg.name, path, scripts: manifest.scripts ?? {} };
-  });
+  return selected;
 }
 
-export function selectPackages<T extends ListedPackage>(
+export function selectPackages<T extends { name: string }>(
   packages: T[],
   names?: string[],
 ): T[] {

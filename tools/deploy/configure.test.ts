@@ -11,6 +11,10 @@ import { tmpdir } from "node:os";
 import { afterEach, expect, it, vi } from "vitest";
 import { configure } from "./configure.js";
 import type { Request, Plan } from "./types.js";
+vi.mock("../workspace/packages.js", () => ({
+  listPackages: async () =>
+    ["a", "b"].map((name) => ({ name, path: `apps/${name}`, scripts: {} })),
+}));
 const roots: string[] = [];
 afterEach(() => {
   vi.unstubAllGlobals();

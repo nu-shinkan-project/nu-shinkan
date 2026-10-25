@@ -27,4 +27,4 @@ pnpm checking run --package @repo/frontend-template --task ui_test
 
 実行後は `.artifacts/checking-result.json` に合格・不合格・実行エラー・スクリプトなしとキャッシュ利用の有無を保存する。チェックまたはUI準備・レポート収集が失敗した場合、終了コードは1になる。詳細は実行ログと結果ファイルを確認する。UIレポートは成功・失敗にかかわらず `.artifacts/ui_test-reports/<workspace相対パス>/` に収集する。UI実行前に過去の収集済みレポートと対象パッケージのHTMLレポートを削除し、キャッシュ再利用時はTurboが復元したレポートを収集する。
 
-内部APIの `listPackages(root, names?, dependents?)` は、名前省略時に全件、空配列で空集合を返す。依存元への展開はTurboに委ねる。`checks(root, packages, tasks?)` は集約結果を返す。デプロイはapps/packagesに限定した影響集合を渡し、結果をデプロイレポートへ含める。ビルドも `checking/tasks.ts` のTurbo実行・結果判定を共用するが、デプロイ固有の順序・中断判断は `tools/deploy` が担当する。
+内部APIの `workspace/packages.ts` の `listPackages(root)` で一覧を取得する。`selectPackages(packages, names?)` は名前省略時に全件、空配列で空集合を返す。`selectWithDependents(root, packages, names, true)` は取得済み一覧を使い、依存元への展開だけをTurboに委ねる。`checks(root, packages, tasks?)` は集約結果を返す。デプロイはapps/packagesに限定した影響集合を渡し、結果をデプロイレポートへ含める。ビルドも `checking/tasks.ts` のTurbo実行・結果判定を共用するが、デプロイ固有の順序・中断判断は `tools/deploy` が担当する。

@@ -2,7 +2,8 @@ import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { command } from "../command.js";
 import { commandFailure, errorDetail } from "../diagnostics.js";
-import type { Package, Check } from "./types.js";
+import type { Check } from "./types.js";
+import type { Package } from "../workspace/types.js";
 
 type TaskSummary = {
   package?: unknown;

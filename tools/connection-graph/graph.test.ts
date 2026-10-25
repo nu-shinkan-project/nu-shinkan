@@ -1,6 +1,3 @@
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { expect, it } from "vitest";
 import { testExports } from "@repo/app-config/deployment";
 import { ConnectionGraph } from "./graph.js";
@@ -67,39 +64,6 @@ it("selects every entry path, including cycles, but not unrelated dependencies",
       JSON.parse(JSON.stringify(graph)),
     ).selectReviewTargets(["api"]),
   ).toEqual(graph.selectReviewTargets(["api"]));
-});
-
-it("reads workspace configuration, missing deployment files, and exclusions", () => {
-  const root = mkdtempSync(join(tmpdir(), "connection-graph-"));
-  try {
-    writeFileSync(
-      join(root, "pnpm-workspace.yaml"),
-      'packages:\n  - "apps/*"\n  - "!apps/excluded"\n',
-    );
-    for (const name of ["api", "web", "shared", "excluded"]) {
-      mkdirSync(join(root, "apps", name), { recursive: true });
-      writeFileSync(
-        join(root, "apps", name, "package.json"),
-        JSON.stringify({ name }),
-      );
-    }
-    writeFileSync(
-      join(root, "apps/web/deployment.yaml"),
-      "reviewEntry: true\nconnections:\n  urls:\n    API: api\n",
-    );
-    const graph = ConnectionGraph.fromWorkspace(root);
-    expect(graph.toJSON().packages).toEqual(["api", "shared", "web"]);
-    expect(graph.selectReviewTargets(["api"])).toEqual(["api", "web"]);
-    writeFileSync(
-      join(root, "apps/web/deployment.yaml"),
-      "connections:\n  urls: []\n",
-    );
-    expect(() => ConnectionGraph.fromWorkspace(root)).toThrow(
-      "expected mapping",
-    );
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
 });
 
 it("handles long paths without recursive stack overflow", () => {

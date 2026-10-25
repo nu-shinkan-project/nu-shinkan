@@ -1,9 +1,7 @@
-import { existsSync, globSync, readFileSync } from "node:fs";
-import { isAbsolute, relative, resolve } from "node:path";
-import YAML from "yaml";
+import { resolve } from "node:path";
 import { WranglerJsonc } from "@repo/app-config/wrangler";
 import { Dotenv } from "@repo/app-config/dotenv";
-import { findWorkspaceRoot } from "./root.js";
+import type { Package } from "./types.js";
 
 export type WorkspaceConfiguration = {
   packageName: string;
@@ -13,51 +11,37 @@ export type WorkspaceConfiguration = {
   dotenv?: Record<string, string>;
 };
 
+/** Load settings at the caller's chosen phase from a captured Turbo inventory. */
 export function getWorkspaceConfigurations(
-  root = findWorkspaceRoot(),
+  root: string,
+  packages: Package[],
 ): WorkspaceConfiguration[] {
-  root = findWorkspaceRoot(root);
-  const { packages } = YAML.parse(
-    readFileSync(resolve(root, "pnpm-workspace.yaml"), "utf8"),
-  );
-  if (
-    !Array.isArray(packages) ||
-    packages.some((p) => typeof p !== "string" || !p)
-  )
-    throw new Error("workspace packages must be an array of patterns");
-  const excluded = packages
-    .filter((p) => p.startsWith("!"))
-    .map((p) => p.slice(1));
-  const directories = globSync(
-    packages.filter((p) => !p.startsWith("!")),
-    {
-      cwd: root,
-      exclude: ["**/node_modules/**", "**/.git/**", ...excluded],
-    },
-  );
-  const names = new Set<string>();
-  return [...new Set(directories)].sort().flatMap((directory) => {
-    const path = resolve(root, directory);
-    const pathRel = relative(root, path).replaceAll("\\", "/");
-    if (!pathRel || pathRel.startsWith("../") || isAbsolute(pathRel)) return [];
-    const manifestPath = resolve(path, "package.json");
-    if (!existsSync(manifestPath)) return [];
-    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-    if (typeof manifest.name !== "string" || !manifest.name.trim())
-      throw new Error(`Missing package name: ${pathRel}`);
-    if (names.has(manifest.name))
-      throw new Error(`Duplicate package name: ${manifest.name}`);
-    names.add(manifest.name);
+  return packages.map((pkg) => {
+    const path = resolve(root, pkg.path);
     const wrangler = new WranglerJsonc(path);
     const dotenv = new Dotenv(path);
-    return [
-      {
-        packageName: manifest.name,
-        path,
-        pathRel,
-        ...(wrangler.exists() ? { wrangler } : {}),
-        ...(dotenv.exists() ? { dotenv: dotenv.variables } : {}),
-      },
-    ];
+    return {
+      packageName: pkg.name,
+      path,
+      pathRel: pkg.path,
+      ...(wrangler.exists() ? { wrangler } : {}),
+      ...(dotenv.exists() ? { dotenv: dotenv.variables } : {}),
+    };
   });
+}
+
+/** Validate only when Worker identity is needed, never for plain inventory. */
+export function workerMapping(configs: WorkspaceConfiguration[]) {
+  const byPackage = new Map<string, string>();
+  const byWorker = new Map<string, string>();
+  for (const pkg of configs) {
+    if (!pkg.wrangler) continue;
+    const name = pkg.wrangler.name;
+    if (typeof name !== "string" || !/^[a-z0-9][a-z0-9-]*$/.test(name))
+      throw new Error(`Invalid Worker name: ${pkg.packageName}`);
+    if (byWorker.has(name)) throw new Error(`Duplicate Worker name: ${name}`);
+    byPackage.set(pkg.packageName, name);
+    byWorker.set(name, pkg.packageName);
+  }
+  return { byPackage, byWorker };
 }
