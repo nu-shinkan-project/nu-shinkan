@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
-import { diagnostic } from "./diagnostics.js";
+import { StringDecoder } from "node:string_decoder";
+import { diagnostic, StreamingDiagnostic } from "./diagnostics.js";
 export type CommandResult =
   | { status: "completed"; code: number; stdout: string; stderr: string }
   | { status: "command-error"; reason: string; stdout: string; stderr: string };
@@ -16,32 +17,43 @@ export async function command(
       env,
       stdio: ["ignore", "pipe", "pipe"],
     });
-    let stdout = "";
-    let stderr = "";
-    child.stderr!.on("data", (data: Buffer) => {
-      stderr += data.toString();
-    });
-    child.stdout!.on("data", (data: Buffer) => {
-      stdout += data.toString();
-    });
-    child.on("error", (error) =>
-      resolve({
-        status: "command-error",
-        reason: diagnostic(error.message, [], env),
-        stdout,
-        stderr,
-      }),
+    const stdoutDecoder = new StringDecoder("utf8"),
+      stderrDecoder = new StringDecoder("utf8");
+    const stdoutLog = new StreamingDiagnostic(env),
+      stderrLog = new StreamingDiagnostic(env);
+    let stdout = "",
+      stderr = "",
+      spawnError: string | undefined;
+    const output = (value: string) => {
+      stdout += value;
+      if (!quiet) process.stderr.write(stdoutLog.push(value));
+    };
+    const error = (value: string) => {
+      stderr += value;
+      if (!quiet) process.stderr.write(stderrLog.push(value));
+    };
+    child.stdout!.on("data", (data: Buffer) =>
+      output(stdoutDecoder.write(data)),
     );
+    child.stderr!.on("data", (data: Buffer) =>
+      error(stderrDecoder.write(data)),
+    );
+    child.on("error", (failure) => {
+      spawnError = diagnostic(failure.message, [], env);
+    });
     child.on("close", (code, signal) => {
-      // Buffer before masking so secrets split across stream chunks remain hidden.
-      if (!quiet || code !== 0) {
+      output(stdoutDecoder.end());
+      error(stderrDecoder.end());
+      if (!quiet) process.stderr.write(stdoutLog.finish() + stderrLog.finish());
+      else if (code !== 0 || spawnError)
         process.stderr.write(diagnostic(stdout + stderr, [], env));
-      }
       resolve(
-        code === null
+        spawnError || code === null
           ? {
               status: "command-error",
-              reason: `Process terminated by ${signal ?? "unknown signal"}`,
+              reason:
+                spawnError ??
+                `Process terminated by ${signal ?? "unknown signal"}`,
               stdout,
               stderr,
             }
