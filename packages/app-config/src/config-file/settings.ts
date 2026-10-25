@@ -1,16 +1,27 @@
-import { DeploymentYaml } from "./deployment.yaml.js";
+import { DeploymentYaml, type Deployment } from "./deployment.yaml.js";
 import { GlobalRuntimeEnvsYaml } from "./globalRuntimeEnvs.yaml.js";
 import type { Variables } from "./deployment.yaml.js";
 
 /** Package settings combined with the shared values for one profile. */
 export class DeploymentSettings {
-  readonly deployment: DeploymentYaml;
+  readonly deployment: Deployment;
   private readonly values: Variables;
 
-  constructor(packagePath: string, profile: "staging" | "release") {
-    this.deployment = new DeploymentYaml(packagePath);
+  constructor(
+    packagePath: string | Deployment,
+    profile: "staging" | "release",
+    shared?: Variables,
+  ) {
+    this.deployment =
+      typeof packagePath === "string"
+        ? new DeploymentYaml(packagePath)
+        : structuredClone({
+            envs: packagePath.envs,
+            connections: packagePath.connections,
+            reviewEntry: packagePath.reviewEntry,
+          });
     this.values = {
-      ...new GlobalRuntimeEnvsYaml().variablesFor(profile),
+      ...(shared ?? new GlobalRuntimeEnvsYaml().variablesFor(profile)),
       ...this.deployment.envs[profile],
     };
   }

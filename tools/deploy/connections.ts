@@ -1,12 +1,17 @@
-import type { Deployment, Variables } from "@repo/app-config/deployment";
-import type { WranglerConfig } from "@repo/app-config/wrangler";
-import type { Request } from "./types.js";
+import type { BindingConnection } from "../workspace/connections.js";
+
+type Variables = Record<string, string>;
+export type ConnectionPolicy = {
+  channel: "preview" | "staging" | "release";
+  profile: "staging" | "release";
+  prNumber: number;
+};
 import { buildWorkerName } from "./worker-name.js";
 
 export function resolveVariables(
   values: Variables,
-  connections: Deployment["connections"]["urls"],
-  request: Request,
+  connections: Record<string, string>,
+  request: ConnectionPolicy,
   targets: ReadonlySet<string>,
   workers: ReadonlyMap<string, string>,
 ):
@@ -40,21 +45,21 @@ export function resolveVariables(
   return { status: "resolved", variables: result };
 }
 
-export function resolveServiceBindings(
-  bindings: NonNullable<WranglerConfig["services"]>,
-  connections: Deployment["connections"]["bindings"],
-  request: Request,
+export function resolveBindingConnections(
+  bindings: BindingConnection[],
+  connections: Record<string, string>,
+  request: ConnectionPolicy,
   targets: ReadonlySet<string>,
   workers: ReadonlyMap<string, string>,
 ):
-  | { status: "resolved"; services: NonNullable<WranglerConfig["services"]> }
+  | { status: "resolved"; connections: BindingConnection[] }
   | { status: "connection-failed"; reason: string } {
-  const resolved: NonNullable<WranglerConfig["services"]> = [];
+  const resolved: BindingConnection[] = [];
   for (const binding of bindings) {
-    const pkg = connections[binding.binding];
+    const pkg = connections[binding.name];
     const preview =
       request.channel === "preview" && pkg !== undefined && targets.has(pkg);
-    const bare = preview ? workers.get(pkg) : binding.service;
+    const bare = preview ? workers.get(pkg) : binding.worker;
     if (!bare)
       return {
         status: "connection-failed",
@@ -62,7 +67,7 @@ export function resolveServiceBindings(
       };
     resolved.push({
       ...binding,
-      service: buildWorkerName(
+      worker: buildWorkerName(
         bare,
         preview ? request.channel : request.profile,
         request.prNumber,
@@ -70,12 +75,12 @@ export function resolveServiceBindings(
     });
   }
   for (const binding of Object.keys(connections)) {
-    if (!resolved.some((s) => s.binding === binding)) {
+    if (!resolved.some((s) => s.name === binding)) {
       return {
         status: "connection-failed",
         reason: `Missing native binding: ${binding}`,
       };
     }
   }
-  return { status: "resolved", services: resolved };
+  return { status: "resolved", connections: resolved };
 }

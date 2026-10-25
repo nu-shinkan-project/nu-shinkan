@@ -1,3 +1,4 @@
+import { DeploymentYaml } from "@repo/app-config/deployment";
 import { resolve } from "node:path";
 import { WranglerJsonc } from "@repo/app-config/wrangler";
 import { Dotenv } from "@repo/app-config/dotenv";
@@ -9,6 +10,7 @@ export type WorkspaceConfiguration = {
   pathRel: string;
   wrangler?: WranglerJsonc;
   dotenv?: Record<string, string>;
+  deployment: DeploymentYaml;
 };
 
 /** Load settings at the caller's chosen phase from a captured Turbo inventory. */
@@ -24,6 +26,7 @@ export function getWorkspaceConfigurations(
       packageName: pkg.name,
       path,
       pathRel: pkg.path,
+      deployment: new DeploymentYaml(path),
       ...(wrangler.exists() ? { wrangler } : {}),
       ...(dotenv.exists() ? { dotenv: dotenv.variables } : {}),
     };

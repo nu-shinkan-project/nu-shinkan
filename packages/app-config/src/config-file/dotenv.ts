@@ -58,9 +58,16 @@ export class Dotenv {
   }
 
   derive(path: string): Dotenv {
-    const derived = new Dotenv(dirname(this.src));
-    derived.src = resolve(dirname(this.src), path);
-    derived.content = Object.entries(this.variables)
+    return Dotenv.fromVariables(
+      resolve(dirname(this.src), path),
+      this.variables,
+    );
+  }
+
+  static fromVariables(path: string, variables: DotenvVariables): Dotenv {
+    const derived = new Dotenv(dirname(path));
+    derived.src = resolve(path);
+    derived.content = Object.entries(variables)
       .map(([key, value]) => {
         const quoted = /^("|')[\s\S]*\1$/.test(value);
         return `VITE_${key}=${quoted ? value : JSON.stringify(value)}`;

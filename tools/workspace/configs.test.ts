@@ -44,7 +44,7 @@ it("loads native settings from the supplied workspace inventory", () => {
   );
   expect(configurations.map((pkg) => pkg.packageName)).toEqual(["api", "web"]);
   expect(configurations[0]?.wrangler?.name).toBe("my-api");
-  expect(configurations[1]).toEqual({
+  expect(configurations[1]).toMatchObject({
     packageName: "web",
     path: join(root, "apps/web"),
     pathRel: "apps/web",
