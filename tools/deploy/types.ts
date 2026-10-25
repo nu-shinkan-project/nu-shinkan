@@ -1,3 +1,4 @@
+import type { Package } from "../workspace/types.js";
 import type { Check, Checks } from "../checking/types.js";
 export type { Check, Checks } from "../checking/types.js";
 export type Channel = "preview" | "staging" | "release";
@@ -23,8 +24,9 @@ export type Plan = {
   deploys: string[];
   warnings: string[];
 };
+export type ExecutionContext = { packages: ReadonlyMap<string, Package> };
 export type Planning =
-  | { status: "planned"; plan: Plan }
+  | { status: "planned"; plan: Plan; context: ExecutionContext }
   | {
       status: "invalid" | "unavailable";
       reason: string;
@@ -53,7 +55,9 @@ export type Deployments = {
 };
 export type State = {
   request: Request;
-  planning: Planning;
+  planning:
+    | Exclude<Planning, { status: "planned" }>
+    | { status: "planned"; plan: Plan };
   sync?: Sync;
   checks?: Checks;
   configuration?: Configuration;

@@ -23,7 +23,11 @@ const plan: Plan = {
 };
 function operations(p = plan): Operations {
   return {
-    plan: vi.fn(async () => ({ status: "planned" as const, plan: p })),
+    plan: vi.fn(async () => ({
+      status: "planned" as const,
+      plan: p,
+      context: { packages: new Map() },
+    })),
     sync: vi.fn(async () => ({ status: "synced" as const })),
     checks: vi.fn(async () => ({ status: "passed" as const, results: [] })),
     configure: vi.fn(async () => ({ status: "generated" as const })),
@@ -99,3 +103,19 @@ it.each(["sync", "configure", "build"] as const)(
     expect(op.report).toHaveBeenCalledWith(result.state);
   },
 );
+
+it("passes the captured context through execution without exposing it in the report", async () => {
+  const op = operations();
+  const context = {
+    packages: new Map([
+      ["api", { name: "api", path: "apps/api", scripts: {} }],
+    ]),
+  };
+  op.plan = async () => ({ status: "planned", plan, context });
+  const result = await orchestrate(request, op);
+  expect(op.checks).toHaveBeenCalledWith(plan, context);
+  expect(op.configure).toHaveBeenCalledWith(plan, request, context);
+  expect(op.build).toHaveBeenCalledWith(plan, context);
+  expect(op.deploy).toHaveBeenCalledWith(plan, context);
+  expect(result.state.planning).not.toHaveProperty("context");
+});
