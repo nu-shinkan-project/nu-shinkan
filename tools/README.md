@@ -4,7 +4,7 @@ Node.js 24 以上と pnpm、およびリポジトリの依存関係を準備し�
 
 ```sh
 pnpm exec tsx tools/workspace/configs-cli.ts
-pnpm exec tsx tools/workspace/configs-cli.ts @repo/dummy-preview-api
+pnpm exec tsx tools/workspace/configs-cli.ts @repo/organization-user-service
 pnpm sync --dry-run
 pnpm sync
 ```

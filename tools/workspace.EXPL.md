@@ -4,11 +4,11 @@
 
 ## Workspace設定
 
-`workspace/root.ts` はカレントディレクトリから親を辿ってpnpm workspaceルートを探す。`workspace/packages.ts` の `listPackages(root)` はTurboのworkspace一覧を基準とし、除外済みの集合をTurboの順序で取得する。ルートは含まず、重複名や範囲外パスを拒否する。`getWorkspaceConfigurations(root, packages)` は取得済み一覧から、パッケージ名、絶対パス `path`、ルート相対パス `pathRel`、存在するWrangler・dotenv設定を返す。重複パッケージ名はエラーになる。
+`workspace/root.ts` はカレントディレクトリから親を辿ってpnpm workspaceルートを探す。`workspace/packages.ts` の `listPackages(root)` はTurboのworkspace一覧を基準とし、除外済みの集合をTurboの順序で取得する。ルートは含まず、重複名や範囲外パスを拒否する。`getWorkspaceConfigurations(root, packages)` は取得済み一覧から、パッケージ名、絶対パス `path`、ルート相対パス `pathRel`、deployment設定と存在するWrangler・dotenv設定を返す。重複パッケージ名はエラーになる。
 
 ```sh
 pnpm exec tsx tools/workspace/configs-cli.ts [--root <directory>]
-pnpm exec tsx tools/workspace/configs-cli.ts @repo/dummy-preview-api
+pnpm exec tsx tools/workspace/configs-cli.ts @repo/organization-user-service
 ```
 
 通常のCLI出力は設定一覧で、Wranglerの内容をJSON化する。dotenvはapp-configと同じく `VITE_` 接頭辞の値だけを扱い、接頭辞を外す。設定値を含むため、一覧全体をActionsのログへ出す必要はない。
@@ -57,7 +57,7 @@ app-configは設定の読み取り、編集、合成、派生、保存を担当�
 
 | 公開口                      | モデルと操作                                                                                                                                                                                                                                                                     |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@repo/app-config/wrangler` | `WranglerJsonc` が元のJSONCを編集・保存し、`derive(path)` で独立した `WranglerJson` を返す。`WranglerJson` は `flattenEnv(profile)`、`update()`、`useWorkersDev()`、`save(dryRun?)` を提供する。`WranglerConfig`、`WranglerPatch`、`D1Database`、`R2Bucket` もここから利用する。 |
+| `@repo/app-config/wrangler` | `WranglerJsonc` が元のJSONCを編集・保存し、`synchronizeServices(connections)` で通常設定と既存profileの接続先だけを更新する。`derive(path)` で独立した `WranglerJson` を返す。`WranglerJson` は `flattenEnv(profile)`、`update()`、`useWorkersDev()`、`save(dryRun?)` を提供する。`WranglerConfig`、`WranglerPatch`、`D1Database`、`R2Bucket` もここから利用する。 |
 | `@repo/app-config/dotenv`   | `Dotenv.derive(path)` は現在のVITE変数から同じ `Dotenv` 型を生成する。元文書のコメントや非VITE行は派生先に複製しない。`updateVariables()` と `save(dryRun?)` は元モデル・派生モデルの両方で使える。                                                                              |
 | `@repo/app-config/settings` | `DeploymentSettings(packagePath, profile)` または `DeploymentSettings(deployment, profile, shared)` が `deployment` と `overrides` を提供する。共有設定よりパッケージの設定を優先する。                                                                                          |
 
