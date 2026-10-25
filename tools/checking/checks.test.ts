@@ -9,7 +9,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
-import type { Package } from "./types.js";
+import type { Package } from "../workspace/types.js";
 vi.mock("../command.js", () => ({ command: vi.fn() }));
 import { command } from "../command.js";
 import { checks } from "./checks.js";

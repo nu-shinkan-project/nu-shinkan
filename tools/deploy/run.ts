@@ -1,3 +1,4 @@
+import type { Package } from "../workspace/types.js";
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 import { rmSync } from "node:fs";
@@ -10,7 +11,7 @@ import { build, deploy } from "./tasks.js";
 import { checks } from "../checking/checks.js";
 import { report } from "./report.js";
 import { orchestrate } from "./orchestrate.js";
-import type { Request, Package } from "./types.js";
+import type { Request } from "./types.js";
 export type Entry = "update" | "full" | "review" | "manual-pick";
 export function parseRequest(
   entry: Entry,

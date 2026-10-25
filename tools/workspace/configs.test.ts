@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, expect, it } from "vitest";
-import { getWorkspaceConfigurations } from "./configs.js";
+import { getWorkspaceConfigurations, workerMapping } from "./configs.js";
 import { findWorkspaceRoot } from "./root.js";
 
 const roots: string[] = [];
@@ -35,10 +35,13 @@ function fixture() {
   );
   return root;
 }
-it("collects native config through public loaders and respects workspace exclusions", () => {
+it("loads native settings from the supplied workspace inventory", () => {
   const root = fixture();
   expect(findWorkspaceRoot(join(root, "apps/api"))).toBe(root);
-  const configurations = getWorkspaceConfigurations(root);
+  const configurations = getWorkspaceConfigurations(
+    root,
+    ["api", "web"].map((name) => ({ name, path: `apps/${name}`, scripts: {} })),
+  );
   expect(configurations.map((pkg) => pkg.packageName)).toEqual(["api", "web"]);
   expect(configurations[0]?.wrangler?.name).toBe("my-api");
   expect(configurations[1]).toEqual({
@@ -48,8 +51,19 @@ it("collects native config through public loaders and respects workspace exclusi
     dotenv: { API: "https://example.com" },
   });
 });
-it("rejects duplicate workspace package names", () => {
+it("rejects ambiguous Worker identities", () => {
   const root = fixture();
-  writeFileSync(join(root, "apps/web/package.json"), '{"name":"api"}');
-  expect(() => getWorkspaceConfigurations(root)).toThrow("Duplicate package");
+  writeFileSync(join(root, "apps/web/wrangler.jsonc"), '{"name":"my-api"}');
+  expect(() =>
+    workerMapping(
+      getWorkspaceConfigurations(
+        root,
+        ["api", "web"].map((name) => ({
+          name,
+          path: `apps/${name}`,
+          scripts: {},
+        })),
+      ),
+    ),
+  ).toThrow("Duplicate Worker name");
 });

@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { collectTaskResults } from "./tasks.js";
-import type { Package } from "./types.js";
+import type { Package } from "../workspace/types.js";
 const packages: Package[] = [
   { name: "a", path: "apps/a", scripts: { test: "vitest" } },
   { name: "b", path: "apps/b", scripts: {} },

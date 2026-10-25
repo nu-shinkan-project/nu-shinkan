@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, expect, it } from "vitest";
 import { WranglerJsonc } from "@repo/app-config/wrangler";
-import type { WorkspaceConfiguration } from "./configs.js";
+import { workerMapping, type WorkspaceConfiguration } from "./configs.js";
 import { selectWorkspaceConfigurations } from "./selection.js";
 
 const roots: string[] = [];
@@ -34,7 +34,7 @@ function worker(packageName: string, name: unknown): WorkspaceConfiguration {
 
 it("lists all configurations without names and selects exact names in workspace order", () => {
   expect(
-    selectWorkspaceConfigurations(configurations, []).map(
+    selectWorkspaceConfigurations(configurations).map(
       (pkg) => "packageName" in pkg && pkg.packageName,
     ),
   ).toEqual(["api", "web", "shared"]);
@@ -43,35 +43,14 @@ it("lists all configurations without names and selects exact names in workspace 
       (pkg) => "packageName" in pkg && pkg.packageName,
     ),
   ).toEqual(["api", "shared"]);
-  expect(selectWorkspaceConfigurations([], [])).toEqual([]);
+  expect(selectWorkspaceConfigurations(configurations, [])).toEqual([]);
 });
 
-it("selects exact deployment targets once in workspace order, including packages without Worker settings", () => {
-  expect(
-    selectWorkspaceConfigurations(configurations, ["shared", "api", "api"], {
-      targets: true,
-    }),
-  ).toEqual([
-    { package: "api", path: "apps/api" },
-    { package: "shared", path: "apps/shared" },
-  ]);
-  expect(
-    selectWorkspaceConfigurations(configurations, [], { targets: true }),
-  ).toEqual([]);
+it("rejects all unknown names", () => {
+  expect(() =>
+    selectWorkspaceConfigurations(configurations, ["api", "missing", "other"]),
+  ).toThrow("Unknown packages: missing, other");
 });
-
-it.each([false, true])(
-  "rejects unknown names before returning a partial selection (targets=%s)",
-  (targets) => {
-    expect(() =>
-      selectWorkspaceConfigurations(
-        configurations,
-        ["api", "missing", "other"],
-        { targets },
-      ),
-    ).toThrow("Unknown packages: missing, other");
-  },
-);
 
 it.each([
   undefined,
@@ -87,32 +66,21 @@ it.each([
   "rejects invalid Worker name %j without returning a partial deployment plan",
   (name) => {
     const packages = [worker("valid", "valid-api"), worker("invalid", name)];
-    expect(() =>
-      selectWorkspaceConfigurations(packages, ["valid", "invalid"], {
-        targets: true,
-      }),
-    ).toThrow("Invalid Worker name: invalid");
-    // Unselected Worker configurations cannot invalidate the selected deployment.
-    expect(
-      selectWorkspaceConfigurations(packages, ["valid"], { targets: true }),
-    ).toEqual([
-      { package: "valid", path: "apps/valid", workerName: "valid-api" },
-    ]);
-    expect(
-      selectWorkspaceConfigurations(packages, [], { targets: true }),
-    ).toEqual([]);
-    // Listing does not impose deployment-only name validation.
-    expect(selectWorkspaceConfigurations(packages, [])).toHaveLength(2);
+    expect(() => workerMapping(packages)).toThrow(
+      "Invalid Worker name: invalid",
+    );
+    expect(workerMapping(packages.slice(0, 1)).byPackage.get("valid")).toBe(
+      "valid-api",
+    );
+    expect(selectWorkspaceConfigurations(packages)).toHaveLength(2);
   },
 );
 
 it.each(["a", "0", "my-api-2", "api-"])(
   "accepts Worker name %s under the existing naming rule",
   (name) => {
-    expect(
-      selectWorkspaceConfigurations([worker("api", name)], ["api"], {
-        targets: true,
-      }),
-    ).toEqual([{ package: "api", path: "apps/api", workerName: name }]);
+    expect(workerMapping([worker("api", name)]).byPackage.get("api")).toBe(
+      name,
+    );
   },
 );

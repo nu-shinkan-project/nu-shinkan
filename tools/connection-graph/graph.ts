@@ -1,6 +1,4 @@
-import { DeploymentYaml, type Deployment } from "@repo/app-config/deployment";
-import { getWorkspaceConfigurations } from "../workspace/configs.js";
-import { findWorkspaceRoot } from "../workspace/root.js";
+import { type Deployment } from "@repo/app-config/deployment";
 
 export type ConnectionGraphJSON = {
   packages: string[];
@@ -15,19 +13,6 @@ export class ConnectionGraph {
   #callers: Map<string, Set<string>>;
 
   // Main Logic
-
-  /** 省略時はこのcheckoutを読み取る。rootの指定は内部のテスト用。 */
-  static fromWorkspace(
-    root = findWorkspaceRoot(import.meta.dirname),
-  ): ConnectionGraph {
-    const packages = getWorkspaceConfigurations(root);
-    return ConnectionGraph.fromDeployments(
-      packages.map((pkg) => pkg.packageName),
-      new Map(
-        packages.map((pkg) => [pkg.packageName, new DeploymentYaml(pkg.path)]),
-      ),
-    );
-  }
 
   static fromDeployments(
     packages: string[],

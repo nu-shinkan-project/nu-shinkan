@@ -1,7 +1,7 @@
 import { parseArgs } from "node:util";
 import { findWorkspaceRoot } from "../workspace/root.js";
 import { errorDetail } from "../diagnostics.js";
-import { listPackages } from "./packages.js";
+import { listPackages, selectPackages } from "../workspace/packages.js";
 import { runChecks } from "./run.js";
 
 try {
@@ -20,7 +20,11 @@ try {
   switch (positionals[0]) {
     case "list":
       if (values.task) throw new Error("--task is only supported by run");
-      console.log(JSON.stringify(await listPackages(root, values.package)));
+      console.log(
+        JSON.stringify(
+          selectPackages(await listPackages(root), values.package),
+        ),
+      );
       break;
     case "run":
       process.exitCode = await runChecks(root, values.package, values.task);

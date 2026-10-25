@@ -1,3 +1,4 @@
+import { listPackages } from "../workspace/packages.js";
 import { errorDetail } from "../diagnostics.js";
 import { DeploymentSettings } from "@repo/app-config/settings";
 import { Dotenv } from "@repo/app-config/dotenv";
@@ -17,7 +18,7 @@ export async function configure(
   request: Request,
   credentials: Cloudflare,
 ): Promise<Configuration> {
-  const configs = getWorkspaceConfigurations(root);
+  const configs = getWorkspaceConfigurations(root, await listPackages(root));
   const targets = new Set(plan.targets);
   const workers = new Map(
     configs

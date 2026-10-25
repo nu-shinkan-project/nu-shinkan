@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import { checks, checkTasks, type CheckTask } from "./checks.js";
-import { listPackages } from "./packages.js";
+import { listPackages, selectPackages } from "../workspace/packages.js";
 
 export async function runChecks(
   root: string,
@@ -11,7 +11,7 @@ export async function runChecks(
   rmSync(resolve(root, ".artifacts/checking-result.json"), { force: true });
   if (tasks?.some((task) => !checkTasks.includes(task as CheckTask)))
     throw new Error(`Supported tasks: ${checkTasks.join(", ")}`);
-  const packages = await listPackages(root, names);
+  const packages = selectPackages(await listPackages(root), names);
   console.log(
     `[checking] Selected ${packages.length} workspaces${packages.length ? "" : ": empty selection"}`,
   );

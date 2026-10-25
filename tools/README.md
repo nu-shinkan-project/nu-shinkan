@@ -4,13 +4,12 @@ Node.js 24 以上と pnpm、およびリポジトリの依存関係を準備し�
 
 ```sh
 pnpm exec tsx tools/workspace/configs-cli.ts
-pnpm exec tsx tools/workspace/configs-cli.ts --targets @repo/dummy-preview-api
+pnpm exec tsx tools/workspace/configs-cli.ts @repo/dummy-preview-api
 pnpm sync --dry-run
 pnpm sync
 ```
 
-設定一覧は JSON として標準出力へ返す。`--targets` は指定したパッケージ名を
-パスと Worker 名を含む配列に変換する。不明なパッケージ名はエラーとなる。
+設定一覧は JSON として標準出力へ返す。パッケージ名を指定すると、その設定だけを返す。不明なパッケージ名はエラーとなる。
 `pnpm sync` は各パッケージのローカル設定を同期する。`--dry-run` は変更せず確認する。
 
 接続グラフの操作は[接続グラフのマニュアル](connection-graph/README.md)、
