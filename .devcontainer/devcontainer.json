@@ -12,6 +12,7 @@
 	// "forwardPorts": [],
 
 	"postCreateCommand": "bash .devcontainer/postCreateScript.sh",
+	"postStartCommand": "bash .devcontainer/postStartScript.sh",
 	"postAttachCommand": "bash .devcontainer/postAttachScript.sh",
 
 	// Configure tool-specific properties.
