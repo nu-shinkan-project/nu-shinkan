@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-nohup bash -c "pnpm tsx tools/sync-env/auto-sync.ts &"
+nohup pnpm tsx tools/sync-env/auto-sync.ts >/tmp/auto-sync.log 2>&1 &
