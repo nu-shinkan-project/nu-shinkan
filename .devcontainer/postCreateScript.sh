@@ -31,6 +31,5 @@ git submodule update --init --recursive -- docs
 # dependencies setup
 # ---------------------------
 
-curl -fsSL https://get.pnpm.io/install.sh | sh -
 pnpm install --frozen-lockfile
 pnpm prepare
