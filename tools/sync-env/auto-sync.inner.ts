@@ -65,7 +65,7 @@ class IssueSerializer {
 
 class ConfigChangeDetector {
   task: () => void;
-  last_hash = "";
+  lastHash = "";
 
   constructor(
     private readonly reporoot: string,
@@ -76,30 +76,27 @@ class ConfigChangeDetector {
 
   async calc_hash() {
     // Hash file contents without depending on the configuration models.
-    const configuration_hash = crypto.createHash("md5");
+    const configurationHash = crypto.createHash("md5");
 
     // take in the global configuration file
-    const global_env_path = resolve(
+    const globalEnvPath = resolve(
       this.reporoot,
       "packages/app-config/globalRuntimeEnvs.yaml",
     );
-    configuration_hash.update(
-      JSON.stringify([
-        global_env_path,
-        fs.readFileSync(global_env_path, "utf8"),
-      ]),
+    configurationHash.update(
+      JSON.stringify([globalEnvPath, fs.readFileSync(globalEnvPath, "utf8")]),
     );
 
     // take in each package's config files
     const packages = await listPackages(this.reporoot);
-    const per_package_config_files = [
+    const perPackageConfigFiles = [
       "wrangler.jsonc",
       "deployment.yaml",
       "package.json",
     ];
     const paths = packages
       .flatMap((pkg) =>
-        per_package_config_files.map((file) =>
+        perPackageConfigFiles.map((file) =>
           resolve(this.reporoot, pkg.path, file),
         ),
       )
@@ -109,11 +106,11 @@ class ConfigChangeDetector {
         ? fs.readFileSync(path, "utf8")
         : null;
       // Include the path and distinguish a missing file from an empty one.
-      configuration_hash.update(JSON.stringify([path, content]));
+      configurationHash.update(JSON.stringify([path, content]));
     }
 
     // done hashing all config files
-    return configuration_hash.digest("hex");
+    return configurationHash.digest("hex");
   }
 
   async issueIfChanged() {
@@ -122,9 +119,9 @@ class ConfigChangeDetector {
       console.debug(new Date(), "[change-detector] hash:", hash);
 
       // check if changed
-      if (hash !== this.last_hash) {
+      if (hash !== this.lastHash) {
         console.debug(new Date(), "[change-detector] config changed");
-        this.last_hash = hash;
+        this.lastHash = hash;
         this.task();
       } else {
         console.debug(new Date(), "[change-detector] config not changed");
@@ -137,8 +134,8 @@ class ConfigChangeDetector {
 
 class Throttler {
   task: () => void;
-  planned_issue: NodeJS.Timeout = setTimeout(() => {}, 0);
-  last_sync = 0;
+  plannedIssue: NodeJS.Timeout = setTimeout(() => {}, 0);
+  lastSync = 0;
   INTERVAL = 500;
 
   constructor(task: () => void) {
@@ -148,13 +145,13 @@ class Throttler {
   issue() {
     console.debug(new Date(), "[throttler] the task issued");
     const now = Date.now();
-    if (now - this.last_sync < this.INTERVAL) {
-      clearTimeout(this.planned_issue);
-      this.planned_issue = setTimeout(() => this.issue(), this.INTERVAL);
+    if (now - this.lastSync < this.INTERVAL) {
+      clearTimeout(this.plannedIssue);
+      this.plannedIssue = setTimeout(() => this.issue(), this.INTERVAL);
       console.debug(new Date(), "[throttler] throttled");
       return;
     }
-    this.last_sync = now;
+    this.lastSync = now;
     this.task();
   }
 }
@@ -213,19 +210,17 @@ function watchAppPackages(reporoot: string, task: () => void) {
  */
 
 export function startAutoSync(reporoot: string) {
-  const serialized_sync = new IssueSerializer(() => sync(reporoot));
-  const sync_only_on_change = new ConfigChangeDetector(reporoot, () =>
-    serialized_sync.issue(),
+  const serializedSync = new IssueSerializer(() => sync(reporoot));
+  const syncOnlyOnChange = new ConfigChangeDetector(reporoot, () =>
+    serializedSync.issue(),
   );
-  const sync_throttled = new Throttler(() =>
-    sync_only_on_change.issueIfChanged(),
-  );
+  const syncThrottled = new Throttler(() => syncOnlyOnChange.issueIfChanged());
 
-  sync_throttled.issue();
+  syncThrottled.issue();
   tryWatch(resolve(reporoot, "packages/app-config"), () =>
-    sync_throttled.issue(),
+    syncThrottled.issue(),
   );
-  watchAppPackages(reporoot, () => sync_throttled.issue());
+  watchAppPackages(reporoot, () => syncThrottled.issue());
 }
 
 export const testExports = { IssueSerializer, ConfigChangeDetector, Throttler };
