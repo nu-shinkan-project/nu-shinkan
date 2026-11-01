@@ -6,11 +6,13 @@
 
 本ワークスペースは，`devcontainer`で開いてください．
 
-`docs`リポジトリが自動でクローンされるはずですが，クローンされなかった場合は
+`docs`はGitサブモジュールとして管理され，devcontainer作成時に自動で初期化・更新されます．
+手動で初期化する場合や，ブランチ切り替え後に記録されたコミットへ揃える場合は，
 リポジトリルートで次を実行してください．
 
 ```sh
-git clone https://github.com/nu-shinkan-project/docs.git docs
+git submodule sync --recursive
+git submodule update --init --recursive -- docs
 ```
 
 ## 開発環境

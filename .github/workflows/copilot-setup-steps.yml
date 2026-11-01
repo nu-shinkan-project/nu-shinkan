@@ -2,12 +2,6 @@ name: Copilot Context Setup
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - .github/workflows/copilot-setup-steps.yml
-  pull_request:
-    paths:
-      - .github/workflows/copilot-setup-steps.yml
 
 jobs:
   copilot-setup-steps:
@@ -19,9 +13,5 @@ jobs:
     steps:
       - name: Checkout product
         uses: actions/checkout@v7
-
-      - name: Checkout docs
-        uses: actions/checkout@v7
         with:
-          repository: nu-shinkan-project/docs
-          path: docs
+          submodules: recursive

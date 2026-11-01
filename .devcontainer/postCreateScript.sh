@@ -21,16 +21,15 @@ git config fetch.pruneTags true
 git config fetch.prune true
 
 # ---------------------------
+# Docs Submodule Setup
+# ---------------------------
+
+git submodule sync --recursive
+git submodule update --init --recursive -- docs
+
+# ---------------------------
 # dependencies setup
 # ---------------------------
 
 pnpm install --frozen-lockfile
 pnpm prepare
-
-# ---------------------------
-# Docs Repo Setup
-# ---------------------------
-
-if [[ ! -d "docs" ]]; then
-  git clone --depth 1 https://github.com/nu-shinkan-project/docs.git
-fi
