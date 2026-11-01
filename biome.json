@@ -1,0 +1,19 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.6.4/schema.json",
+  "extends": ["@repo/biome-config/biome.json"],
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": [
+      "**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}",
+      "!**/*.d.ts",
+      "!**/*.gen.ts",
+      "!docs/**",
+      "!**/bin/**",
+      "!**/.wrangler/**"
+    ]
+  }
+}

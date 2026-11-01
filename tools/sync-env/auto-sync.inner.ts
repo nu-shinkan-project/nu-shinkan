@@ -136,7 +136,7 @@ class Throttler {
   task: () => void;
   plannedIssue: NodeJS.Timeout = setTimeout(() => {}, 0);
   lastSync = 0;
-  INTERVAL = 500;
+  interval = 500;
 
   constructor(task: () => void) {
     this.task = task;
@@ -145,9 +145,9 @@ class Throttler {
   issue() {
     console.debug(new Date(), "[throttler] the task issued");
     const now = Date.now();
-    if (now - this.lastSync < this.INTERVAL) {
+    if (now - this.lastSync < this.interval) {
       clearTimeout(this.plannedIssue);
-      this.plannedIssue = setTimeout(() => this.issue(), this.INTERVAL);
+      this.plannedIssue = setTimeout(() => this.issue(), this.interval);
       console.debug(new Date(), "[throttler] throttled");
       return;
     }

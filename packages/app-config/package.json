@@ -8,7 +8,7 @@
     "prepare": "pnpm build",
     "bootstrap": "pnpm install --filter . && pnpm build",
     "test": "vitest src/",
-    "lint": "eslint . --fix",
+    "lint": "biome lint . --no-errors-on-unmatched && eslint . --fix",
     "compile": "pnpm lint && pnpm test --run && pnpm build"
   },
   "bin": {

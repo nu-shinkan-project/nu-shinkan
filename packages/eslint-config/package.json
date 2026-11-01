@@ -19,5 +19,8 @@
     "globals": "17.11.0",
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "typescript-eslint": "8.68.0"
+  },
+  "scripts": {
+    "lint": "biome lint . --no-errors-on-unmatched"
   }
 }

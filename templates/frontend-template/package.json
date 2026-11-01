@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5173 --mode development",
     "check-types": "tsc --noEmit",
-    "lint": "eslint .",
+    "lint": "biome lint . --no-errors-on-unmatched && eslint .",
     "preview": "vite preview --mode development",
     "test": "vitest",
     "ui_test": "playwright test",

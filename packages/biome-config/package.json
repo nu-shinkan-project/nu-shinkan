@@ -1,0 +1,14 @@
+{
+  "name": "@repo/biome-config",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./biome.json": "./base.json",
+    "./lint-staged": "./lint-staged.mjs",
+    "./lint-staged-eslint": "./lint-staged-eslint.mjs"
+  },
+  "scripts": {
+    "lint": "biome lint . --no-errors-on-unmatched"
+  },
+  "type": "module"
+}

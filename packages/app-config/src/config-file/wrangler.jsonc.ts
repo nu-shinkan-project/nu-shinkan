@@ -162,11 +162,11 @@ function patch(original: string, values: WranglerPatch): string {
     }
   }
   // 既存Bindingに対応しなかった接続だけを末尾に追加する。
-  let length_count = (originalModel.services ?? []).length;
+  let lengthCount = (originalModel.services ?? []).length;
   for (const [binding, service] of Object.entries(serviceBindingMap)) {
     const nextEdits = modifyJsonc(
       original,
-      ["services", length_count, "binding"],
+      ["services", lengthCount, "binding"],
       binding,
       {
         formattingOptions,
@@ -176,14 +176,14 @@ function patch(original: string, values: WranglerPatch): string {
 
     const nextEditsService = modifyJsonc(
       original,
-      ["services", length_count, "service"],
+      ["services", lengthCount, "service"],
       service,
       {
         formattingOptions,
       },
     );
     original = applyEdits(original, nextEditsService);
-    length_count++;
+    lengthCount++;
   }
 
   // patch the rest of the fields last

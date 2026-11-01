@@ -9,7 +9,9 @@
     "packages/eslint-config/*.js",
     "apps/**/wrangler.jsonc",
     "apps/**/.env.development",
-    "packages/app-config/globalRuntimeEnvs.yaml"
+    "packages/app-config/globalRuntimeEnvs.yaml",
+    "biome.json",
+    "packages/biome-config/**"
   ],
   "globalEnv": ["CI", "TEST", "NODE_ENV", "VITE_*"],
   "tasks": {

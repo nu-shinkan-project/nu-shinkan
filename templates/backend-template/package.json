@@ -6,7 +6,7 @@
     "dev": "wrangler dev --host 0.0.0.0 --port 6173 --inspector-port 9229",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "check-types": "tsc --noEmit",
-    "lint": "eslint .",
+    "lint": "biome lint . --no-errors-on-unmatched && eslint .",
     "build": "tsc --noEmit && WRANGLER_LOG=error wrangler deploy --dry-run --outdir dist",
     "sync:local": "sync-local"
   },

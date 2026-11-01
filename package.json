@@ -16,6 +16,8 @@
     "checking": "tsx tools/checking/cli.ts"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.6.4",
+    "@repo/biome-config": "workspace:*",
     "@types/node": "26.3.0",
     "husky": "^8.0.0",
     "lint-staged": "^17.4.1",
