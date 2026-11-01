@@ -16,7 +16,7 @@ async function sync() {
   try {
     await syncRepository(reporoot);
   } catch (err) {
-    // prevent crash of watcher process on error
+    // prevent crashing of watcher process on error
     console.error(new Date(), "[sync] failed:", err);
   }
 }
@@ -44,17 +44,23 @@ class IssueSerializer {
     }
     this.processing = true;
 
-    this.task().then(() => {
-      // on task finish, clear processing flag
-      console.debug(new Date(), "[serializer] done");
-      this.processing = false;
-      if (this.redo) {
-        // redo if needed but only once
-        this.redo = false;
-        console.debug(new Date(), "[serializer] redo");
-        this.issue();
-      }
-    });
+    this.task()
+      .then(() => {
+        // on task finish, clear processing flag
+        console.debug(new Date(), "[serializer] done");
+        this.processing = false;
+        if (this.redo) {
+          // redo if needed but only once
+          this.redo = false;
+          console.debug(new Date(), "[serializer] redo");
+          this.issue();
+        }
+      })
+      .catch(
+        // log error if task fails
+        // do not escalate to prevent crashing of watcher process
+        (err) => console.error(new Date(), "[serializer] error", err),
+      );
   }
 }
 
@@ -160,7 +166,7 @@ function try_watch(path: string, handler: () => void) {
   try {
     return fs.watch(path, handler);
   } catch (err) {
-    // suppress errors to prevent crash of watcher process
+    // suppress errors to prevent crashing of watcher process
     console.error(new Date(), "[watch] failed to watch", path, err);
   }
 }
