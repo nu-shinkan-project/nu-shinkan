@@ -11,24 +11,37 @@ afterEach(() => {
 });
 
 it("coalesces requests during a running sync into one subsequent sync", async () => {
-  let finish!: () => void;
-  const task = vi.fn(
-    () =>
-      new Promise<void>((resolve) => {
-        finish = resolve;
-      }),
-  );
+  let finishFirst!: () => void;
+  let finishSecond!: () => void;
+  let startSecond!: () => void;
+  const firstTask = new Promise<void>((resolve) => {
+    finishFirst = resolve;
+  });
+  const secondTask = new Promise<void>((resolve) => {
+    finishSecond = resolve;
+  });
+  const secondStarted = new Promise<void>((resolve) => {
+    startSecond = resolve;
+  });
+  const task = vi
+    .fn(() => Promise.resolve())
+    .mockImplementationOnce(() => firstTask)
+    .mockImplementationOnce(() => {
+      startSecond();
+      return secondTask;
+    });
   const serializer = new IssueSerializer(task);
-  serializer.issue();
+  const completed = serializer.issue();
   serializer.issue();
   serializer.issue();
   expect(task).toHaveBeenCalledTimes(1);
 
-  finish();
-  await Promise.resolve();
+  finishFirst();
+  await secondStarted;
   expect(task).toHaveBeenCalledTimes(2);
-  finish();
-  await Promise.resolve();
+  expect(serializer.processing).toBe(true);
+  finishSecond();
+  await completed;
   expect(task).toHaveBeenCalledTimes(2);
   expect(serializer.processing).toBe(false);
 });

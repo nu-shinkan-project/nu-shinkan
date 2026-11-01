@@ -41,7 +41,7 @@ class IssueSerializer {
     }
     this.processing = true;
 
-    this.task()
+    return this.task()
       .then(() => {
         console.debug(new Date(), "[serializer] done");
       })
@@ -57,7 +57,7 @@ class IssueSerializer {
           // redo if needed but only once
           this.redo = false;
           console.debug(new Date(), "[serializer] redo");
-          this.issue();
+          return this.issue();
         }
       });
   }
