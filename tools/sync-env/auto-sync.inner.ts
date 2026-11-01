@@ -43,8 +43,15 @@ class IssueSerializer {
 
     this.task()
       .then(() => {
-        // on task finish, clear processing flag
         console.debug(new Date(), "[serializer] done");
+      })
+      .catch(
+        // log error if task fails
+        // do not escalate to prevent crashing of watcher process
+        (err) => console.error(new Date(), "[serializer] error", err),
+      )
+      .finally(() => {
+        // on task finish/failed, clear processing flag
         this.processing = false;
         if (this.redo) {
           // redo if needed but only once
@@ -52,12 +59,7 @@ class IssueSerializer {
           console.debug(new Date(), "[serializer] redo");
           this.issue();
         }
-      })
-      .catch(
-        // log error if task fails
-        // do not escalate to prevent crashing of watcher process
-        (err) => console.error(new Date(), "[serializer] error", err),
-      );
+      });
   }
 }
 
