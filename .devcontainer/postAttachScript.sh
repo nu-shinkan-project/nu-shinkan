@@ -82,4 +82,4 @@ printf '\n\n'
 # 一時ファイルの除去
 # ----------------
 
-rm -f /tmp/*
+rm -f /tmp/auto-sync.log
