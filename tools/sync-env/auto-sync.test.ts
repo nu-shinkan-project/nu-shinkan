@@ -1,0 +1,92 @@
+import { afterEach, expect, it, vi } from "vitest";
+
+vi.mock("../workspace/packages.js", () => ({ listPackages: vi.fn() }));
+import { testExports } from "./auto-sync.inner.js";
+
+const { IssueSerializer, ConfigChangeDetector, Throttler } = testExports;
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.useRealTimers();
+});
+
+it("coalesces requests during a running sync into one subsequent sync", async () => {
+  let finish!: () => void;
+  const task = vi.fn(
+    () =>
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const serializer = new IssueSerializer(task);
+  serializer.issue();
+  serializer.issue();
+  serializer.issue();
+  expect(task).toHaveBeenCalledTimes(1);
+
+  finish();
+  await Promise.resolve();
+  expect(task).toHaveBeenCalledTimes(2);
+  finish();
+  await Promise.resolve();
+  expect(task).toHaveBeenCalledTimes(2);
+  expect(serializer.processing).toBe(false);
+});
+
+it("runs a burst immediately and once more after the events settle", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-11-01T00:00:00Z"));
+  const task = vi.fn();
+  const throttler = new Throttler(task);
+  throttler.issue();
+  vi.advanceTimersByTime(100);
+  throttler.issue();
+  vi.advanceTimersByTime(100);
+  throttler.issue();
+  expect(task).toHaveBeenCalledTimes(1);
+  vi.advanceTimersByTime(499);
+  expect(task).toHaveBeenCalledTimes(1);
+  vi.advanceTimersByTime(1);
+  expect(task).toHaveBeenCalledTimes(2);
+  vi.advanceTimersByTime(1000);
+  expect(task).toHaveBeenCalledTimes(2);
+});
+
+it("issues sync only for a new configuration hash", async () => {
+  const task = vi.fn();
+  const detector = new ConfigChangeDetector("/repo", task);
+  vi.spyOn(detector, "calc_hash")
+    .mockResolvedValueOnce("A")
+    .mockResolvedValueOnce("A")
+    .mockResolvedValueOnce("B");
+  await detector.issue_if_changed();
+  await detector.issue_if_changed();
+  expect(task).toHaveBeenCalledTimes(1);
+  await detector.issue_if_changed();
+  expect(task).toHaveBeenCalledTimes(2);
+});
+
+it("handles a hash failure and can detect a change on a later event", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const task = vi.fn();
+  const detector = new ConfigChangeDetector("/repo", task);
+  vi.spyOn(detector, "calc_hash")
+    .mockRejectedValueOnce(new Error("configuration unavailable"))
+    .mockResolvedValueOnce("A");
+  await expect(detector.issue_if_changed()).resolves.toBeUndefined();
+  expect(task).not.toHaveBeenCalled();
+  await detector.issue_if_changed();
+  expect(task).toHaveBeenCalledTimes(1);
+});
+
+it("does not reissue an unchanged configuration after the task fails", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const task = vi.fn(() => {
+    throw new Error("sync failed");
+  });
+  const detector = new ConfigChangeDetector("/repo", task);
+  vi.spyOn(detector, "calc_hash").mockResolvedValue("A");
+  await detector.issue_if_changed();
+  await detector.issue_if_changed();
+  expect(task).toHaveBeenCalledTimes(1);
+});
