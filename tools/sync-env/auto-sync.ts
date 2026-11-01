@@ -152,7 +152,7 @@ function try_watch(path: string, handler: () => void) {
   try {
     return fs.watch(path, handler);
   } catch (err) {
-    // suppress errors to prevent crush of watcher process
+    // suppress errors to prevent crash of watcher process
     console.error(new Date(), "[watch] failed to watch", path, err);
   }
 }
