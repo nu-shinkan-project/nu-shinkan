@@ -66,7 +66,7 @@ class ConfigChangeDetector {
     this.task = task;
   }
 
-  async issue_if_changed() {
+  async calc_hash() {
     // Hash file contents without depending on the configuration models.
     const configuration_hash = crypto.createHash("md5");
 
@@ -105,16 +105,24 @@ class ConfigChangeDetector {
     }
 
     // done hashing all config files
-    const hash = configuration_hash.digest("hex");
-    console.debug(new Date(), "[change-detector] hash:", hash);
+    return configuration_hash.digest("hex");
+  }
 
-    // check if changed
-    if (hash !== this.last_hash) {
-      console.debug(new Date(), "[change-detector] config changed");
-      this.last_hash = hash;
-      this.task();
-    } else {
-      console.debug(new Date(), "[change-detector] config not changed");
+  async issue_if_changed() {
+    try {
+      const hash = await this.calc_hash();
+      console.debug(new Date(), "[change-detector] hash:", hash);
+
+      // check if changed
+      if (hash !== this.last_hash) {
+        console.debug(new Date(), "[change-detector] config changed");
+        this.last_hash = hash;
+        this.task();
+      } else {
+        console.debug(new Date(), "[change-detector] config not changed");
+      }
+    } catch (err) {
+      console.error(new Date(), "[change-detector] error", err);
     }
   }
 }
