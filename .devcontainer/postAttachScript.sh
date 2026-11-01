@@ -77,3 +77,9 @@ fi
 printf '  git branch -d'
 printf ' %q' "${gone_branches[@]}"
 printf '\n\n'
+
+# ----------------
+# 一時ファイルの除去
+# ----------------
+
+rm -f /tmp/*
