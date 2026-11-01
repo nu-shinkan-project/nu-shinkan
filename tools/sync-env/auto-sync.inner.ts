@@ -203,7 +203,7 @@ function watch_app_packages(reporoot: string, task: () => void) {
   // initialize watcher collection at first.
   // this is necessary to watch already-existing files
   renew_watchers();
-  // watch for creattion/deletion of apps themselves.
+  // watch for creation/deletion of apps themselves.
   try_watch(resolve(reporoot, "apps"), renew_watchers);
 }
 /**
