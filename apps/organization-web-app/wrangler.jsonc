@@ -21,5 +21,7 @@
       "binding": "ORGANIZATION_USER_SERVICE",
       "service": "organization-user-service"
     }
-  ]
+  ],
+  "vars": {
+  }
 }
