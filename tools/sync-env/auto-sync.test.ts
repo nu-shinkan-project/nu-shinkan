@@ -72,10 +72,10 @@ it("issues sync only for a new configuration hash", async () => {
     .mockResolvedValueOnce("A")
     .mockResolvedValueOnce("A")
     .mockResolvedValueOnce("B");
-  await detector.issue_if_changed();
-  await detector.issue_if_changed();
+  await detector.issueIfChanged();
+  await detector.issueIfChanged();
   expect(task).toHaveBeenCalledTimes(1);
-  await detector.issue_if_changed();
+  await detector.issueIfChanged();
   expect(task).toHaveBeenCalledTimes(2);
 });
 
@@ -86,9 +86,9 @@ it("handles a hash failure and can detect a change on a later event", async () =
   vi.spyOn(detector, "calc_hash")
     .mockRejectedValueOnce(new Error("configuration unavailable"))
     .mockResolvedValueOnce("A");
-  await expect(detector.issue_if_changed()).resolves.toBeUndefined();
+  await expect(detector.issueIfChanged()).resolves.toBeUndefined();
   expect(task).not.toHaveBeenCalled();
-  await detector.issue_if_changed();
+  await detector.issueIfChanged();
   expect(task).toHaveBeenCalledTimes(1);
 });
 
@@ -99,7 +99,7 @@ it("does not reissue an unchanged configuration after the task fails", async () 
   });
   const detector = new ConfigChangeDetector("/repo", task);
   vi.spyOn(detector, "calc_hash").mockResolvedValue("A");
-  await detector.issue_if_changed();
-  await detector.issue_if_changed();
+  await detector.issueIfChanged();
+  await detector.issueIfChanged();
   expect(task).toHaveBeenCalledTimes(1);
 });

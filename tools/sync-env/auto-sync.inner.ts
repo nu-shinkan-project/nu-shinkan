@@ -1,5 +1,5 @@
-import fs from "fs";
-import crypto from "crypto";
+import fs from "node:fs";
+import crypto from "node:crypto";
 import { resolve } from "node:path";
 import { listPackages } from "../workspace/packages.js";
 import { syncRepository } from "./repository.js";
@@ -116,7 +116,7 @@ class ConfigChangeDetector {
     return configuration_hash.digest("hex");
   }
 
-  async issue_if_changed() {
+  async issueIfChanged() {
     try {
       const hash = await this.calc_hash();
       console.debug(new Date(), "[change-detector] hash:", hash);
@@ -163,7 +163,7 @@ class Throttler {
  * Helpers: Observing events
  */
 
-function try_watch(path: string, handler: () => void) {
+function tryWatch(path: string, handler: () => void) {
   console.debug(new Date(), "[watch] try to watch", path);
   try {
     return fs.watch(path, handler);
@@ -185,16 +185,16 @@ class WatcherCollection {
     this.watchers = [];
   }
   add(file: string) {
-    const watcher = try_watch(file, this.handler);
+    const watcher = tryWatch(file, this.handler);
     if (!watcher) return;
     this.watchers.push(watcher);
   }
 }
 
-function watch_app_packages(reporoot: string, task: () => void) {
+function watchAppPackages(reporoot: string, task: () => void) {
   // prepare watcher collection that execute task on change in apps/*/{target_files}
   const watchers = new WatcherCollection(task);
-  function renew_watchers() {
+  function renewWatchers() {
     watchers.clear();
     fs.readdirSync(resolve(reporoot, "apps")).forEach((app) => {
       watchers.add(resolve(reporoot, `apps/${app}`));
@@ -204,9 +204,9 @@ function watch_app_packages(reporoot: string, task: () => void) {
 
   // initialize watcher collection at first.
   // this is necessary to watch already-existing files
-  renew_watchers();
+  renewWatchers();
   // watch for creation/deletion of apps themselves.
-  try_watch(resolve(reporoot, "apps"), renew_watchers);
+  tryWatch(resolve(reporoot, "apps"), renewWatchers);
 }
 /**
  * Orchestrate: main program
@@ -218,14 +218,14 @@ export function startAutoSync(reporoot: string) {
     serialized_sync.issue(),
   );
   const sync_throttled = new Throttler(() =>
-    sync_only_on_change.issue_if_changed(),
+    sync_only_on_change.issueIfChanged(),
   );
 
   sync_throttled.issue();
-  try_watch(resolve(reporoot, "packages/app-config"), () =>
+  tryWatch(resolve(reporoot, "packages/app-config"), () =>
     sync_throttled.issue(),
   );
-  watch_app_packages(reporoot, () => sync_throttled.issue());
+  watchAppPackages(reporoot, () => sync_throttled.issue());
 }
 
 export const testExports = { IssueSerializer, ConfigChangeDetector, Throttler };
