@@ -68,7 +68,7 @@ it("runs a burst immediately and once more after the events settle", () => {
 it("issues sync only for a new configuration hash", async () => {
   const task = vi.fn();
   const detector = new ConfigChangeDetector("/repo", task);
-  vi.spyOn(detector, "calc_hash")
+  vi.spyOn(detector, "calcHash")
     .mockResolvedValueOnce("A")
     .mockResolvedValueOnce("A")
     .mockResolvedValueOnce("B");
@@ -83,7 +83,7 @@ it("handles a hash failure and can detect a change on a later event", async () =
   vi.spyOn(console, "error").mockImplementation(() => {});
   const task = vi.fn();
   const detector = new ConfigChangeDetector("/repo", task);
-  vi.spyOn(detector, "calc_hash")
+  vi.spyOn(detector, "calcHash")
     .mockRejectedValueOnce(new Error("configuration unavailable"))
     .mockResolvedValueOnce("A");
   await expect(detector.issueIfChanged()).resolves.toBeUndefined();
@@ -98,7 +98,7 @@ it("does not reissue an unchanged configuration after the task fails", async () 
     throw new Error("sync failed");
   });
   const detector = new ConfigChangeDetector("/repo", task);
-  vi.spyOn(detector, "calc_hash").mockResolvedValue("A");
+  vi.spyOn(detector, "calcHash").mockResolvedValue("A");
   await detector.issueIfChanged();
   await detector.issueIfChanged();
   expect(task).toHaveBeenCalledTimes(1);

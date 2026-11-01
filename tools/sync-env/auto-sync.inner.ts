@@ -74,7 +74,7 @@ class ConfigChangeDetector {
     this.task = task;
   }
 
-  async calc_hash() {
+  async calcHash() {
     // Hash file contents without depending on the configuration models.
     const configurationHash = crypto.createHash("md5");
 
@@ -115,7 +115,7 @@ class ConfigChangeDetector {
 
   async issueIfChanged() {
     try {
-      const hash = await this.calc_hash();
+      const hash = await this.calcHash();
       console.debug(new Date(), "[change-detector] hash:", hash);
 
       // check if changed
